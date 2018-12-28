@@ -34,7 +34,6 @@ struct BlockRply
   string hash;
   string nonce;
   std::vector<string> uncles;
-  // std::vector<string> sealFields;
 };
 
 class BlockMakerEth : public BlockMaker
