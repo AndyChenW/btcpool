@@ -29,6 +29,13 @@
 #include "BlockMaker.h"
 #include "CommonEth.h"
 
+struct BlockRply
+{
+  string hash;
+  string nonce;
+  std::vector<string> uncles;
+  // std::vector<string> sealFields;
+};
 
 class BlockMakerEth : public BlockMaker
 {
@@ -55,6 +62,14 @@ private:
   bool checkRpcSubmitBlockDetail();
 
   bool useSubmitBlockDetail_;
+
+  void isUnclesThread(const uint32_t height, const string &nonce, const string &hash);
+  string getBlockHeight();
+  BlockRply getBlockByHeight(string height);
+  BlockRply getUncleByBlockNumberAndIndex(string height, string index);
+  bool matchBlock(BlockRply block, const string &nonce, const string &hash);
+  void updateBlockToDB(const string &nonce, const uint32_t height, const uint32_t height_rel,
+                       const int is_orphaned, const int is_uncle, const int64_t reward);
 };
 
 #endif

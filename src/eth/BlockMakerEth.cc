@@ -27,6 +27,7 @@
 #include "utilities_js.hpp"
 
 #include <thread>
+#include <boost/thread.hpp>
 
 ////////////////////////////////////////////////BlockMakerEth////////////////////////////////////////////////////////////////
 BlockMakerEth::BlockMakerEth(shared_ptr<BlockMakerDefinition> def, const char *kafkaBrokers, const MysqlConnectInfo &poolDB) 
@@ -282,6 +283,10 @@ void BlockMakerEth::_submitBlockThread(const string &nonce, const string &header
       LOG(INFO) << submitRpcName << " success, chain: " << chain << ", height: " << height
                 << ", hash: " << blockHash << ", hash_no_nonce: " << header
                 << ", networkDiff: " << networkDiff << ", worker: " << worker.fullName_;
+
+      //add thread for classify block_states.
+      boost::thread thread(std::bind(&BlockMakerEth::isUnclesThread, this, height, nonce, blockHash));
+
       return true;
     }
 
@@ -345,5 +350,242 @@ void BlockMakerEth::saveBlockToDB(const string &nonce, const string &header, con
   else
   {
     LOG(INFO) << "insert found block success for height " << height;
+  }
+}
+
+const int64_t REWARDS = 2e+18;
+void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, const string &hash)
+{
+  sleep(120);
+  string strCurrentHeight = BlockMakerEth::getBlockHeight();
+  bool is_orphan = true;
+  bool is_uncles = false;
+
+  if (strCurrentHeight != "")
+  {
+    uint32_t currentHeight = (uint32_t)strtoul(strCurrentHeight.c_str(), nullptr, 16);
+    LOG(INFO) << "------start to get block states in height: " << height << " && pendingHeight : " << currentHeight;
+
+    for (uint32_t i = 0; i < 8; i++)
+    {
+      if ((height + i) >= currentHeight)
+      {
+        break;
+      }
+      std::string strheight = Strings::Format("0x%x", (height + i));
+      BlockRply block = BlockMakerEth::getBlockByHeight(strheight);
+
+      if (BlockMakerEth::matchBlock(block, nonce, hash))
+      {
+        is_orphan = false;
+        LOG(INFO) << "~~~~~~~~ this is normal block: " << height << " -- " << (height + i) << "; [Rewards]:" << REWARDS << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+        BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, REWARDS);
+        break;
+      }
+
+      if (block.uncles.empty())
+      {
+        continue;
+      }
+
+      // Trying to find uncle in current block during our forward check
+      int count = block.uncles.size();
+      LOG(INFO) << "uncles : " << count;
+      for (int j = 0; j < count; j++)
+      {
+        std::string uncleIndex = Strings::Format("0x%x", j);
+        BlockRply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
+        if (BlockMakerEth::matchBlock(uncle, nonce, hash))
+        {
+          is_orphan = false;
+          is_uncles = true;
+          int64_t uncleRewards;
+          uncleRewards = int64_t(REWARDS / 8 * (8 - i));
+          LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- " << (height + i) << "; [uncleRewards]:" << uncleRewards << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+          BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, uncleRewards);
+          //change height;
+          break;
+        }
+      }
+
+      // Found block or uncle
+      if (!is_orphan)
+      {
+        break;
+      }
+    }
+    LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
+  }
+}
+
+string BlockMakerEth::getBlockHeight()
+{
+  string request = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"pending\", false],\"id\":2}";
+
+  for (const auto &itr : def()->nodes)
+  {
+    string response;
+    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
+    if (!ok)
+    {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+      return "";
+    }
+
+    JsonNode r;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
+    {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+      return "";
+    }
+
+    JsonNode result = r["result"];
+    if (result.type() != Utilities::JS::type::Obj ||
+        result["number"].type() != Utilities::JS::type::Str)
+    {
+      LOG(ERROR) << "block informaiton format not expected: " << response;
+      return "";
+    }
+
+    return result["number"].str();
+  }
+
+  return "";
+}
+
+BlockRply BlockMakerEth::getBlockByHeight(string height)
+{
+  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBlockByNumber\", \"params\": [\"%s\",true], \"id\": 2}",
+                                   height.c_str());
+  BlockRply Res;
+  for (const auto &itr : def()->nodes)
+  {
+    string response;
+    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
+    if (!ok)
+    {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+      return Res;
+    }
+
+    JsonNode r;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
+    {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+      return Res;
+    }
+
+    JsonNode result = r["result"];
+    if (result.type() != Utilities::JS::type::Obj ||
+        result["hash"].type() != Utilities::JS::type::Str ||
+        result["nonce"].type() != Utilities::JS::type::Str ||
+        result["uncles"].type() != Utilities::JS::type::Array)
+    {
+      LOG(ERROR) << "block informaiton format not expected: " << response;
+      return Res;
+    }
+
+    Res.hash = result["hash"].str();
+    Res.nonce = result["nonce"].str();
+
+    auto uncle = result["uncles"].array();
+    for (int i = 0; i < uncle.size(); i++)
+    {
+      Res.uncles.push_back(uncle[i].str());
+    }
+    return Res;
+  }
+
+  return Res;
+}
+
+BlockRply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string index)
+{
+  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_getUncleByBlockNumberAndIndex\", \"params\": [\"%s\",\"%s\"], \"id\": 0}\n",
+                                   height.c_str(), index.c_str());
+  LOG(INFO) << request;
+  BlockRply Res;
+  for (const auto &itr : def()->nodes)
+  {
+    string response;
+    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
+    if (!ok)
+    {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+      return Res;
+    }
+
+    JsonNode r;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
+    {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+      return Res;
+    }
+
+    JsonNode result = r["result"];
+    if (result.type() != Utilities::JS::type::Obj ||
+        result["hash"].type() != Utilities::JS::type::Str ||
+        result["nonce"].type() != Utilities::JS::type::Str ||
+        result["uncles"].type() != Utilities::JS::type::Array)
+    {
+      LOG(ERROR) << "block informaiton format not expected: " << response;
+      return Res;
+    }
+    Res.hash = result["hash"].str();
+    Res.nonce = result["nonce"].str();
+
+    return Res;
+  }
+
+  return Res;
+}
+
+bool BlockMakerEth::matchBlock(BlockRply block, const string &nonce, const string &hash)
+{
+  // Just compare hash if block is unlocked as immature
+  if (hash.length() > 0 && hash == block.hash)
+  {
+    LOG(INFO) << "---HASH EQUAL ---[hash]:" << block.hash;
+    return true;
+  }
+  // Geth-style candidate matching
+  if (block.nonce.length() > 0 && nonce == block.nonce)
+  {
+    LOG(INFO) << "---NONCE EQUAL ---[nonce]:" << block.nonce;
+    return true;
+  }
+
+  return false;
+}
+
+void BlockMakerEth::updateBlockToDB(const string &nonce, const uint32_t height, const uint32_t height_rel,
+                                    const int is_orphaned, const int is_uncle, const int64_t reward)
+{
+  string sql;
+  sql = Strings::Format(" UPDATE `found_blocks` SET `height`= %lu, "
+                        " `is_orphaned`=%d, `is_uncle`=%d, `rewards`= %" PRId64 ""
+                        " WHERE `height`= %lu AND `nonce`= \"%s\";",
+                        height_rel,
+                        is_orphaned, is_uncle, reward,
+                        height, nonce.c_str());
+  LOG(INFO) << sql;
+
+  // try connect to DB
+  MySQLConnection db(poolDB_);
+  for (size_t i = 0; i < 3; i++)
+  {
+    if (db.ping())
+      break;
+    else
+      sleep(3);
+  }
+
+  if (db.execute(sql) == false)
+  {
+    LOG(ERROR) << "----update found block failure: " << sql;
+  }
+  else
+  {
+    LOG(INFO) << "----update found block success for height " << height;
   }
 }
