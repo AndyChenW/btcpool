@@ -354,103 +354,61 @@ void BlockMakerEth::saveBlockToDB(const string &nonce, const string &header, con
 }
 
 const int64_t REWARDS = 2e+18;
+const int ETH_MAX_UNCLE_GENERATIONS = 8; 
+const int ETH_BLOCK_TIME = 15;
 void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, const string &hash)
 {
-  sleep(120);
-  string strCurrentHeight = BlockMakerEth::getBlockHeight();
+  sleep(ETH_MAX_UNCLE_GENERATIONS * ETH_BLOCK_TIME);
   bool is_orphan = true;
   bool is_uncles = false;
 
-  if (strCurrentHeight != "")
+  LOG(INFO) << "------start to get block states in height: " << height;
+
+  for (int i = 0; i < ETH_MAX_UNCLE_GENERATIONS; i++)
   {
-    uint32_t currentHeight = (uint32_t)strtoul(strCurrentHeight.c_str(), nullptr, 16);
-    LOG(INFO) << "------start to get block states in height: " << height << " && pendingHeight : " << currentHeight;
+    std::string strheight = Strings::Format("0x%x", (height + i));
+    BlockRply block = BlockMakerEth::getBlockByHeight(strheight);
 
-    for (uint32_t i = 0; i < 8; i++)
+    if (BlockMakerEth::matchBlock(block, nonce, hash))
     {
-      if ((height + i) >= currentHeight)
-      {
-        break;
-      }
-      std::string strheight = Strings::Format("0x%x", (height + i));
-      BlockRply block = BlockMakerEth::getBlockByHeight(strheight);
+      is_orphan = false;
+      LOG(INFO) << "~~~~~~~~ this is normal block: " << height << " -- " << (height + i) << "; [Rewards]:" << REWARDS << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+      BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, REWARDS);
+      break;
+    }
 
-      if (BlockMakerEth::matchBlock(block, nonce, hash))
+    if (block.uncles.empty())
+    {
+      continue;
+    }
+
+    // Trying to find uncle in current block during our forward check
+    int count = block.uncles.size();
+    LOG(INFO) << "uncles : " << count;
+    for (int j = 0; j < count; j++)
+    {
+      std::string uncleIndex = Strings::Format("0x%x", j);
+      BlockRply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
+      if (BlockMakerEth::matchBlock(uncle, nonce, hash))
       {
         is_orphan = false;
-        LOG(INFO) << "~~~~~~~~ this is normal block: " << height << " -- " << (height + i) << "; [Rewards]:" << REWARDS << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
-        BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, REWARDS);
-        break;
-      }
-
-      if (block.uncles.empty())
-      {
-        continue;
-      }
-
-      // Trying to find uncle in current block during our forward check
-      int count = block.uncles.size();
-      LOG(INFO) << "uncles : " << count;
-      for (int j = 0; j < count; j++)
-      {
-        std::string uncleIndex = Strings::Format("0x%x", j);
-        BlockRply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
-        if (BlockMakerEth::matchBlock(uncle, nonce, hash))
-        {
-          is_orphan = false;
-          is_uncles = true;
-          int64_t uncleRewards;
-          uncleRewards = int64_t(REWARDS / 8 * (8 - i));
-          LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- " << (height + i) << "; [uncleRewards]:" << uncleRewards << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
-          BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, uncleRewards);
-          //change height;
-          break;
-        }
-      }
-
-      // Found block or uncle
-      if (!is_orphan)
-      {
+        is_uncles = true;
+        int64_t uncleRewards;
+        uncleRewards = int64_t(REWARDS / ETH_MAX_UNCLE_GENERATIONS * (ETH_MAX_UNCLE_GENERATIONS - i));
+        LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- " << (height + i) << "; [uncleRewards]:" << uncleRewards << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+        BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, uncleRewards);
+        //change height;
         break;
       }
     }
-    LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
+
+    // Found block or uncle
+    if (!is_orphan)
+    {
+      break;
+    }
   }
-}
-
-string BlockMakerEth::getBlockHeight()
-{
-  string request = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"pending\", false],\"id\":2}";
-
-  for (const auto &itr : def()->nodes)
-  {
-    string response;
-    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
-    if (!ok)
-    {
-      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
-      return "";
-    }
-
-    JsonNode r;
-    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
-    {
-      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
-      return "";
-    }
-
-    JsonNode result = r["result"];
-    if (result.type() != Utilities::JS::type::Obj ||
-        result["number"].type() != Utilities::JS::type::Str)
-    {
-      LOG(ERROR) << "block informaiton format not expected: " << response;
-      return "";
-    }
-
-    return result["number"].str();
-  }
-
-  return "";
+  LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
 }
 
 BlockRply BlockMakerEth::getBlockByHeight(string height)
