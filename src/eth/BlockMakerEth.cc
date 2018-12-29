@@ -367,7 +367,7 @@ void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, c
   for (int i = 0; i < ETH_MAX_UNCLE_GENERATIONS; i++)
   {
     std::string strheight = Strings::Format("0x%x", (height + i));
-    BlockRply block = BlockMakerEth::getBlockByHeight(strheight);
+    BlockReply block = BlockMakerEth::getBlockByHeight(strheight);
 
     if (BlockMakerEth::matchBlock(block, nonce, hash))
     {
@@ -388,7 +388,7 @@ void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, c
     for (int j = 0; j < count; j++)
     {
       std::string uncleIndex = Strings::Format("0x%x", j);
-      BlockRply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
+      BlockReply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
       if (BlockMakerEth::matchBlock(uncle, nonce, hash))
       {
         is_orphan = false;
@@ -411,11 +411,11 @@ void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, c
   LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
 }
 
-BlockRply BlockMakerEth::getBlockByHeight(string height)
+BlockReply BlockMakerEth::getBlockByHeight(string height)
 {
   string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBlockByNumber\", \"params\": [\"%s\",true], \"id\": 2}",
                                    height.c_str());
-  BlockRply Res;
+  BlockReply Res;
   for (const auto &itr : def()->nodes)
   {
     string response;
@@ -457,12 +457,12 @@ BlockRply BlockMakerEth::getBlockByHeight(string height)
   return Res;
 }
 
-BlockRply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string index)
+BlockReply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string index)
 {
   string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_getUncleByBlockNumberAndIndex\", \"params\": [\"%s\",\"%s\"], \"id\": 0}\n",
                                    height.c_str(), index.c_str());
   LOG(INFO) << request;
-  BlockRply Res;
+  BlockReply Res;
   for (const auto &itr : def()->nodes)
   {
     string response;
@@ -498,7 +498,7 @@ BlockRply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string ind
   return Res;
 }
 
-bool BlockMakerEth::matchBlock(BlockRply block, const string &nonce, const string &hash)
+bool BlockMakerEth::matchBlock(BlockReply block, const string &nonce, const string &hash)
 {
   // Just compare hash if block is unlocked as immature
   if (hash.length() > 0 && hash == block.hash)

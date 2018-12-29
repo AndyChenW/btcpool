@@ -29,7 +29,7 @@
 #include "BlockMaker.h"
 #include "CommonEth.h"
 
-struct BlockRply
+struct BlockReply
 {
   string hash;
   string nonce;
@@ -63,9 +63,9 @@ private:
   bool useSubmitBlockDetail_;
 
   void isUnclesThread(const uint32_t height, const string &nonce, const string &hash);
-  BlockRply getBlockByHeight(string height);
-  BlockRply getUncleByBlockNumberAndIndex(string height, string index);
-  bool matchBlock(BlockRply block, const string &nonce, const string &hash);
+  BlockReply getBlockByHeight(string height);
+  BlockReply getUncleByBlockNumberAndIndex(string height, string index);
+  bool matchBlock(BlockReply block, const string &nonce, const string &hash);
   void updateBlockToDB(const string &nonce, const uint32_t height, const uint32_t height_rel,
                        const int is_orphaned, const int is_uncle, const int64_t reward);
 };
