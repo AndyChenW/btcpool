@@ -355,16 +355,26 @@ void BlockMakerEth::saveBlockToDB(const string &nonce, const string &header, con
 
 const int64_t REWARDS = 2e+18;
 const int ETH_MAX_UNCLE_GENERATIONS = 8; 
-const int ETH_BLOCK_TIME = 15;
 void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, const string &hash)
 {
-  sleep(ETH_MAX_UNCLE_GENERATIONS * ETH_BLOCK_TIME);
+  bool is_wait = true;
+  while(is_wait)
+  {
+    string strCurrentHeight = BlockMakerEth::getBlockHeight();
+    uint32_t currentHeight = (uint32_t)strtoul(strCurrentHeight.c_str(), nullptr, 16);
+    if (currentHeight >= (height + ETH_MAX_UNCLE_GENERATIONS - 2)) {
+      is_wait = false;
+      break;
+    }
+    sleep(10);
+  }
+
   bool is_orphan = true;
   bool is_uncles = false;
 
   LOG(INFO) << "------start to get block states in height: " << height;
 
-  for (int i = 0; i < ETH_MAX_UNCLE_GENERATIONS; i++)
+  for (int i = 0; i < ETH_MAX_UNCLE_GENERATIONS - 2; i++)
   {
     std::string strheight = Strings::Format("0x%x", (height + i));
     BlockReply block = BlockMakerEth::getBlockByHeight(strheight);
@@ -409,6 +419,41 @@ void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, c
     }
   }
   LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
+}
+
+string BlockMakerEth::getBlockHeight()
+{
+  string request = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"pending\", false],\"id\":2}";
+
+  for (const auto &itr : def()->nodes)
+  {
+    string response;
+    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
+    if (!ok)
+    {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+      return "";
+    }
+
+    JsonNode r;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
+    {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+      return "";
+    }
+
+    JsonNode result = r["result"];
+    if (result.type() != Utilities::JS::type::Obj ||
+        result["number"].type() != Utilities::JS::type::Str)
+    {
+      LOG(ERROR) << "block informaiton format not expected: " << response;
+      return "";
+    }
+
+    return result["number"].str();
+  }
+
+  return "";
 }
 
 BlockReply BlockMakerEth::getBlockByHeight(string height)

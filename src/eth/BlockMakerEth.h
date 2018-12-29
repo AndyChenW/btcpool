@@ -63,6 +63,7 @@ private:
   bool useSubmitBlockDetail_;
 
   void isUnclesThread(const uint32_t height, const string &nonce, const string &hash);
+  string getBlockHeight();
   BlockReply getBlockByHeight(string height);
   BlockReply getUncleByBlockNumberAndIndex(string height, string index);
   bool matchBlock(BlockReply block, const string &nonce, const string &hash);
