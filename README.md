@@ -51,6 +51,16 @@ See Also:
 3. Install `Bitcoind`, need to enable ZMQ
 4. Install `BTCPool`, see [INSTALL-BTCPool.md](docs/INSTALL-BTCPool.md)
 
+## Quick install for ubuntu ( test pass for ubuntu 16.04.4)
+
+1. Initialize the building environment with [init_ubuntu_16.04.4.sh](install/init_ubuntu_16.04.4.sh)
+
+2. running
+
+```
+sh init_folders.sh
+```
+
 ## Upgrade
 
 Upgrading to BTCPool 2.3.0 requires additional operations on `sharelogger`, `slparser` and `statshttpd` due to incompatible sharelog format changes.
