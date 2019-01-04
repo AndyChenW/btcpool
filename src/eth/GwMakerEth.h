@@ -39,7 +39,6 @@ class GwMakerHandlerEth : public GwMakerHandlerJson
     return "[{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBlockByNumber\", \"params\": [\"pending\", false], \"id\": 1}"
            ",{\"jsonrpc\": \"2.0\", \"method\": \"eth_getWork\", \"params\": [], \"id\": 1}]";
   }
-  string getBlockHeight();
 };
 
 #endif

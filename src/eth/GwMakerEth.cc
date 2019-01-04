@@ -224,31 +224,3 @@ string GwMakerHandlerEth::constructRawMsg(JsonNode &r) {
                          transactions,
                          gasUsedPercent);
 }
-
-string GwMakerHandlerEth::getBlockHeight() {
-  const string request = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"pending\", false],\"id\":2}";
-
-  string response;
-  bool res = blockchainNodeRpcCall(def_.rpcAddr_.c_str(), def_.rpcUserPwd_.c_str(), request.c_str(), response);
-  if (!res) {
-    LOG(ERROR) << "get pending block failed";
-    return "";
-  }
-
-  JsonNode j;
-  if (!JsonNode::parse(response.c_str(), response.c_str() + response.length(), j))
-  {
-    LOG(ERROR) << "deserialize block informaiton failed";
-    return "";
-  }
-
-  JsonNode result = j["result"];
-  if (result.type() != Utilities::JS::type::Obj ||
-      result["number"].type() != Utilities::JS::type::Str)
-  {
-    LOG(ERROR) << "block informaiton format not expected: " << response;
-    return "";
-  }
-
-  return result["number"].str();
-}
