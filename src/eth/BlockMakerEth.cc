@@ -285,7 +285,7 @@ void BlockMakerEth::_submitBlockThread(const string &nonce, const string &header
                 << ", networkDiff: " << networkDiff << ", worker: " << worker.fullName_;
 
       //add thread for classify block_states.
-      boost::thread thread(std::bind(&BlockMakerEth::isUnclesThread, this, height, nonce, blockHash));
+      boost::thread thread(std::bind(&BlockMakerEth::isUnclesThread, this, height, nonce));
 
       return true;
     }
@@ -355,14 +355,15 @@ void BlockMakerEth::saveBlockToDB(const string &nonce, const string &header, con
 
 const int64_t REWARDS = 2e+18;
 const int ETH_MAX_UNCLE_GENERATIONS = 8; 
-void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, const string &hash)
+const int ETH_MAX_UNCLE_LOERHEIGHT = 6; 
+void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce)
 {
   bool is_wait = true;
   while(is_wait)
   {
     string strCurrentHeight = BlockMakerEth::getBlockHeight();
     uint32_t currentHeight = (uint32_t)strtoul(strCurrentHeight.c_str(), nullptr, 16);
-    if (currentHeight >= (height + ETH_MAX_UNCLE_GENERATIONS - 2)) {
+    if (currentHeight >= (height + ETH_MAX_UNCLE_LOERHEIGHT)) {
       is_wait = false;
       break;
     }
@@ -371,53 +372,52 @@ void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce, c
 
   bool is_orphan = true;
   bool is_uncles = false;
+  int64_t rewards = 0;
+  string hash = "";
 
   LOG(INFO) << "------start to get block states in height: " << height;
 
-  for (int i = 0; i < ETH_MAX_UNCLE_GENERATIONS - 2; i++)
+  for (int i = 0; i <= ETH_MAX_UNCLE_LOERHEIGHT; i++)
   {
     std::string strheight = Strings::Format("0x%x", (height + i));
     BlockReply block = BlockMakerEth::getBlockByHeight(strheight);
 
-    if (BlockMakerEth::matchBlock(block, nonce, hash))
+    //Check if this is a normal block.
+    if (BlockMakerEth::matchBlock(block, nonce))
     {
       is_orphan = false;
+      rewards = REWARDS;
+      hash = block.hash;
       LOG(INFO) << "~~~~~~~~ this is normal block: " << height << " -- " << (height + i) << "; [Rewards]:" << REWARDS << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
-      BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, REWARDS);
       break;
     }
 
-    if (block.uncles.empty())
+    if (!block.uncles.empty())
     {
-      continue;
-    }
-
-    // Trying to find uncle in current block during our forward check
-    int count = block.uncles.size();
-    LOG(INFO) << "uncles : " << count;
-    for (int j = 0; j < count; j++)
-    {
-      std::string uncleIndex = Strings::Format("0x%x", j);
-      BlockReply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
-      if (BlockMakerEth::matchBlock(uncle, nonce, hash))
+      // Trying to find uncle in current block during our forward check
+      for (int j = 0; j < block.uncles.size(); j++)
       {
-        is_orphan = false;
-        is_uncles = true;
-        int64_t uncleRewards;
-        uncleRewards = int64_t(REWARDS / ETH_MAX_UNCLE_GENERATIONS * (ETH_MAX_UNCLE_GENERATIONS - i));
-        LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- " << (height + i) << "; [uncleRewards]:" << uncleRewards << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
-        BlockMakerEth::updateBlockToDB(nonce, height, (height + i), is_orphan, is_uncles, uncleRewards);
-        //change height;
+        std::string uncleIndex = Strings::Format("0x%x", j);
+        BlockReply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
+        if (BlockMakerEth::matchBlock(uncle, nonce))
+        {
+          is_orphan = false;
+          is_uncles = true;
+          rewards = int64_t(REWARDS / ETH_MAX_UNCLE_GENERATIONS * (ETH_MAX_UNCLE_GENERATIONS - i));
+          hash = uncle.hash;
+          LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- " << (height + i) << "; [uncleRewards]:" << rewards << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+          break;
+        }
+      }
+      // Found uncle
+      if (is_uncles)
+      {
         break;
       }
     }
-
-    // Found block or uncle
-    if (!is_orphan)
-    {
-      break;
-    }
   }
+
+  BlockMakerEth::updateBlockToDB(nonce, height, hash, is_orphan, is_uncles, rewards);
   LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
 }
 
@@ -543,15 +543,8 @@ BlockReply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string in
   return Res;
 }
 
-bool BlockMakerEth::matchBlock(BlockReply block, const string &nonce, const string &hash)
+bool BlockMakerEth::matchBlock(BlockReply block, const string &nonce)
 {
-  // Just compare hash if block is unlocked as immature
-  if (hash.length() > 0 && hash == block.hash)
-  {
-    LOG(INFO) << "---HASH EQUAL ---[hash]:" << block.hash;
-    return true;
-  }
-  // Geth-style candidate matching
   if (block.nonce.length() > 0 && nonce == block.nonce)
   {
     LOG(INFO) << "---NONCE EQUAL ---[nonce]:" << block.nonce;
@@ -561,14 +554,14 @@ bool BlockMakerEth::matchBlock(BlockReply block, const string &nonce, const stri
   return false;
 }
 
-void BlockMakerEth::updateBlockToDB(const string &nonce, const uint32_t height, const uint32_t height_rel,
+void BlockMakerEth::updateBlockToDB(const string &nonce, const uint32_t height, const string &hash,
                                     const int is_orphaned, const int is_uncle, const int64_t reward)
 {
   string sql;
-  sql = Strings::Format(" UPDATE `found_blocks` SET `height`= %lu, "
-                        " `is_orphaned`=%d, `is_uncle`=%d, `rewards`= %" PRId64 ""
-                        " WHERE `height`= %lu AND `nonce`= \"%s\";",
-                        height_rel,
+  sql = Strings::Format(" UPDATE `found_blocks` SET `hash`=\"%s\", "
+                        " `is_orphaned`=%d, `is_uncle`=%d, `rewards`=%" PRId64 ""
+                        " WHERE `height`=%lu AND `nonce`=\"%s\";",
+                        hash.c_str(),
                         is_orphaned, is_uncle, reward,
                         height, nonce.c_str());
   LOG(INFO) << sql;
