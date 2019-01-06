@@ -31,42 +31,38 @@
 // default worker name
 #define DEFAULT_WORKER_NAME "__default__"
 
-inline uint32_t jobId2Time(uint64_t jobId)
-{
+inline uint32_t jobId2Time(uint64_t jobId) {
   return (uint32_t)((jobId >> 32) & 0x00000000FFFFFFFFULL);
 }
 
-string filterWorkerName(const string &workerName);
+string filterWorkerName(const string& workerName);
 
-inline string filterWorkerName(const char *workerName)
-{
+inline string filterWorkerName(const char* workerName) {
   return filterWorkerName(std::string(workerName));
 }
 
-
-
 //////////////////////////////// StratumError ////////////////////////////////
-class StratumStatus
-{
-public:
-  enum
-  {
+class StratumStatus {
+ public:
+  enum {
     // make ACCEPT and SOLVED be two singular value,
     // so code bug is unlikely to make false ACCEPT shares
 
     // share reached the job target (but may not reached the network target)
-    ACCEPT = 1798084231, // bin(01101011 00101100 10010110 10000111)
+    ACCEPT = 1798084231,  // bin(01101011 00101100 10010110 10000111)
 
     // share reached the job target but the job is stale
-    // if uncle block is allowed in the chain, share can be accept as this status
-    ACCEPT_STALE = 950395421, // bin(00111000 10100101 11100010 00011101)
+    // if uncle block is allowed in the chain, share can be accept as this
+    // status
+    ACCEPT_STALE = 950395421,  // bin(00111000 10100101 11100010 00011101)
 
     // share reached the network target
-    SOLVED = 1422486894, // bin(‭01010100 11001001 01101101 01101110‬)
+    SOLVED = 1422486894,  // bin(‭01010100 11001001 01101101 01101110‬)
 
     // share reached the network target but the job is stale
-    // if uncle block is allowed in the chain, share can be accept as this status
-    SOLVED_STALE = 1713984938, // bin(01100110 00101001 01010101 10101010)
+    // if uncle block is allowed in the chain, share can be accept as this
+    // status
+    SOLVED_STALE = 1713984938,  // bin(01100110 00101001 01010101 10101010)
 
     REJECT_NO_REASON = 0,
 
@@ -89,11 +85,11 @@ public:
     CLIENT_IS_NOT_SWITCHER = 400,
 #endif
 
-    UNKNOWN = 2147483647 // bin(01111111 11111111 11111111 11111111)
+    UNKNOWN = 2147483647  // bin(01111111 11111111 11111111 11111111)
   };
 
-  static const char *toString(int err);
-  
+  static const char* toString(int err);
+
   inline static bool isAccepted(int status) {
     return (status == ACCEPT) || (status == ACCEPT_STALE) ||
            (status == SOLVED) || (status == SOLVED_STALE);
@@ -109,24 +105,23 @@ public:
 };
 
 //////////////////////////////// StratumWorker ////////////////////////////////
-class StratumWorker
-{
-public:
+class StratumWorker {
+ public:
   int32_t userId_;
-  int64_t workerHashId_; // substr(0, 8, HASH(wokerName))
+  int64_t workerHashId_;  // substr(0, 8, HASH(wokerName))
 
-  string fullName_; // fullName = username.workername
+  string fullName_;  // fullName = username.workername
   string userName_;
-  string workerName_; // workername, max is: 20
+  string workerName_;  // workername, max is: 20
 
   void reset();
 
-public:
+ public:
   StratumWorker();
-  void setUserIDAndNames(const int32_t userId, const string &fullName);
-  string getUserName(const string &fullName) const;
+  void setUserIDAndNames(const int32_t userId, const string& fullName);
+  string getUserName(const string& fullName) const;
 
-  static int64_t calcWorkerId(const string &workerName);
+  static int64_t calcWorkerId(const string& workerName);
 };
 
 ////////////////////////////////// StratumJob //////////////////////////////////
@@ -154,50 +149,56 @@ public:
 //              so job_ids can be eventually rotated.
 //
 //
-class StratumJob
-{
-public:
+class StratumJob {
+ public:
   // jobId: timestamp + gbtHash, hex string, we need to make sure jobId is
   // unique in a some time, jobId can convert to uint64_t
   uint64_t jobId_;
-protected:
-  StratumJob(); //  protected so cannot create it.
-public:
+
+ protected:
+  StratumJob();  //  protected so cannot create it.
+ public:
   virtual ~StratumJob();
 
   virtual string serializeToJson() const = 0;
-  virtual bool unserializeFromJson(const char *s, size_t len) = 0;
+  virtual bool unserializeFromJson(const char* s, size_t len) = 0;
   virtual uint32_t jobTime() const { return jobId2Time(jobId_); }
-
 };
 
 // shares submitted by this session, for duplicate share check
 // TODO: Move bitcoin-specific fields to the subclass
 struct LocalShare {
-  uint64_t exNonce2_;  // extra nonce2 fixed 8 bytes
-  uint32_t nonce_;     // nonce in block header
-  uint32_t time_;      // nTime in block header
+  uint64_t exNonce2_;     // extra nonce2 fixed 8 bytes
+  uint32_t nonce_;        // nonce in block header
+  uint32_t time_;         // nTime in block header
   uint32_t versionMask_;  // block version mask
 
-  LocalShare(uint64_t exNonce2, uint32_t nonce, uint32_t time, uint32_t versionMask):
-      exNonce2_(exNonce2), nonce_(nonce), time_(time), versionMask_(versionMask) {}
-  
-  LocalShare(uint64_t exNonce2, uint32_t nonce, uint32_t time):
-      exNonce2_(exNonce2), nonce_(nonce), time_(time), versionMask_(0) {}
+  LocalShare(uint64_t exNonce2,
+             uint32_t nonce,
+             uint32_t time,
+             uint32_t versionMask)
+      : exNonce2_(exNonce2),
+        nonce_(nonce),
+        time_(time),
+        versionMask_(versionMask) {}
 
-  LocalShare & operator=(const LocalShare &other) {
+  LocalShare(uint64_t exNonce2, uint32_t nonce, uint32_t time)
+      : exNonce2_(exNonce2), nonce_(nonce), time_(time), versionMask_(0) {}
+
+  LocalShare& operator=(const LocalShare& other) {
     exNonce2_ = other.exNonce2_;
-    nonce_    = other.nonce_;
-    time_     = other.time_;
+    nonce_ = other.nonce_;
+    time_ = other.time_;
     versionMask_ = other.versionMask_;
     return *this;
   }
 
-  bool operator<(const LocalShare &r) const {
-    if (exNonce2_  < r.exNonce2_ ||
-       (exNonce2_ == r.exNonce2_ && nonce_  < r.nonce_) ||
-       (exNonce2_ == r.exNonce2_ && nonce_ == r.nonce_ && time_  < r.time_) ||
-       (exNonce2_ == r.exNonce2_ && nonce_ == r.nonce_ && time_ == r.time_ && versionMask_ < r.versionMask_)) {
+  bool operator<(const LocalShare& r) const {
+    if (exNonce2_ < r.exNonce2_ ||
+        (exNonce2_ == r.exNonce2_ && nonce_ < r.nonce_) ||
+        (exNonce2_ == r.exNonce2_ && nonce_ == r.nonce_ && time_ < r.time_) ||
+        (exNonce2_ == r.exNonce2_ && nonce_ == r.nonce_ && time_ == r.time_ &&
+         versionMask_ < r.versionMask_)) {
       return true;
     }
     return false;
@@ -208,12 +209,9 @@ struct LocalJob {
   uint64_t jobId_;
   std::set<LocalShare> submitShares_;
 
-  LocalJob(uint64_t jobId)
-      : jobId_(jobId)
-  {
-  }
+  LocalJob(uint64_t jobId) : jobId_(jobId) {}
 
-  bool addLocalShare(const LocalShare &localShare) {
+  bool addLocalShare(const LocalShare& localShare) {
     return submitShares_.insert(localShare).second;
   }
 };

@@ -29,7 +29,6 @@
 
 #include "zmq.hpp"
 
-
 /////////////////////////////////// GbtMaker ///////////////////////////////////
 class GbtMaker {
   atomic<bool> running_;
@@ -53,25 +52,28 @@ class GbtMaker {
 
   bool checkBitcoindZMQ();
 
-  bool bitcoindRpcGBT(string &resp);
+  bool bitcoindRpcGBT(string& resp);
   string makeRawGbtMsg();
   void submitRawGbtMsg(bool checkTime);
 
 #ifdef CHAIN_TYPE_BCH
-  bool bitcoindRpcGBTLight(string &resp);
+  bool bitcoindRpcGBTLight(string& resp);
   string makeRawGbtLightMsg();
   void submitRawGbtLightMsg(bool checkTime);
 #endif
 
   void threadListenBitcoind();
 
-  void kafkaProduceMsg(const void *payload, size_t len);
+  void kafkaProduceMsg(const void* payload, size_t len);
 
-public:
-  GbtMaker(const string &zmqBitcoindAddr,
-           const string &bitcoindRpcAddr, const string &bitcoindRpcUserpass,
-           const string &kafkaBrokers, const string &kafkaRawGbtTopic,
-           uint32_t kRpcCallInterval, bool isCheckZmq);
+ public:
+  GbtMaker(const string& zmqBitcoindAddr,
+           const string& bitcoindRpcAddr,
+           const string& bitcoindRpcUserpass,
+           const string& kafkaBrokers,
+           const string& kafkaRawGbtTopic,
+           uint32_t kRpcCallInterval,
+           bool isCheckZmq);
   ~GbtMaker();
 
   bool init();
@@ -81,8 +83,6 @@ public:
 #endif
   void run();
 };
-
-
 
 //////////////////////////////// NMCAuxBlockMaker //////////////////////////////
 //
@@ -109,27 +109,29 @@ class NMCAuxBlockMaker {
   bool useCreateAuxBlockInterface_;
 
   bool checkNamecoindZMQ();
-  bool callRpcCreateAuxBlock(string &resp);
+  bool callRpcCreateAuxBlock(string& resp);
   string makeAuxBlockMsg();
 
   void submitAuxblockMsg(bool checkTime);
   void threadListenNamecoind();
 
-  void kafkaProduceMsg(const void *payload, size_t len);
+  void kafkaProduceMsg(const void* payload, size_t len);
 
-public:
-  NMCAuxBlockMaker(const string &zmqNamecoindAddr,
-                   const string &rpcAddr, const string &rpcUserpass,
-                   const string &kafkaBrokers, const string &kafkaAuxPowGwTopic,
+ public:
+  NMCAuxBlockMaker(const string& zmqNamecoindAddr,
+                   const string& rpcAddr,
+                   const string& rpcUserpass,
+                   const string& kafkaBrokers,
+                   const string& kafkaAuxPowGwTopic,
                    uint32_t kRpcCallInterval,
-                   const string &fileLastRpcCallTime, bool isCheckZmq,
-                   const string &coinbaseAddress);
+                   const string& fileLastRpcCallTime,
+                   bool isCheckZmq,
+                   const string& coinbaseAddress);
   ~NMCAuxBlockMaker();
 
   bool init();
   void stop();
   void run();
 };
-
 
 #endif

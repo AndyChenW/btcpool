@@ -21,8 +21,9 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  */
-#ifndef BTCPOOL_ZOOKEEPER_H_ // <zookeeper/zookeeper.h> has defined ZOOKEEPER_H_
-#define BTCPOOL_ZOOKEEPER_H_ // add a prefix BTCPOOL_ to avoid the conflict
+#ifndef BTCPOOL_ZOOKEEPER_H_  // <zookeeper/zookeeper.h> has defined
+                              // ZOOKEEPER_H_
+#define BTCPOOL_ZOOKEEPER_H_  // add a prefix BTCPOOL_ to avoid the conflict
 
 #include <zookeeper/zookeeper.h>
 #include <zookeeper/proto.h>
@@ -31,36 +32,46 @@
 
 using std::string;
 
-#define ZOOKEEPER_CONNECT_TIMEOUT 10000 //(ms)
+#define ZOOKEEPER_CONNECT_TIMEOUT 10000  //(ms)
 #define ZOOKEEPER_LOCK_PATH_MAX_LEN 255
 
 class ZookeeperException : public std::runtime_error {
-public:
-  explicit ZookeeperException(const string &what_arg);
+ public:
+  explicit ZookeeperException(const string& what_arg);
 };
 
 class Zookeeper {
   // zookeeper handle
-  zhandle_t *zh;
+  zhandle_t* zh;
 
-public:
-  static int nodeNameCompare(const void *pname1, const void *pname2);
+ public:
+  static int nodeNameCompare(const void* pname1, const void* pname2);
 
-  static void globalWatcher(zhandle_t *zh, int type, int state, const char *path, void *zookeeper);
+  static void globalWatcher(zhandle_t* zh,
+                            int type,
+                            int state,
+                            const char* path,
+                            void* zookeeper);
 
-  static void lockWatcher(zhandle_t *zh, int type, int state, const char *path, void *zookeeper);
+  static void lockWatcher(zhandle_t* zh,
+                          int type,
+                          int state,
+                          const char* path,
+                          void* zookeeper);
 
-  Zookeeper(const char *servers);
+  Zookeeper(const char* servers);
 
   virtual ~Zookeeper();
-  
-  void getLock(const char *lockParentPath);
 
-  bool doGetLock(const char *lockParentPath, const char *lockNodePath);
+  void getLock(const char* lockParentPath);
 
-  void createLockNode(const char *nodeParentPath, char *newNodePath, int newNodePathMaxLen);
+  bool doGetLock(const char* lockParentPath, const char* lockNodePath);
 
-  void createNodesRecursively(const char *nodePath);
+  void createLockNode(const char* nodeParentPath,
+                      char* newNodePath,
+                      int newNodePathMaxLen);
+
+  void createNodesRecursively(const char* nodePath);
 };
 
-#endif // BTCPOOL_ZOOKEEPER_H_
+#endif  // BTCPOOL_ZOOKEEPER_H_

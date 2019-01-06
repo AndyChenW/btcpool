@@ -30,45 +30,48 @@
 
 #include "zlibstream/zstr.hpp"
 
-
 //////////////////////////////  ShareLogWriter  ///////////////////////////////
 // Interface, used as a pointer type.
 class ShareLogWriter {
-public:
-  virtual ~ShareLogWriter() {};
+ public:
+  virtual ~ShareLogWriter(){};
   virtual void stop() = 0;
   virtual void run() = 0;
 };
 
-//////////////////////////////  ShareLogWriterT  /////////////////////////////////
+//////////////////////////////  ShareLogWriterT
+////////////////////////////////////
 // 1. consume topic 'ShareLog'
 // 2. write sharelog to Disk
 //
-template<class SHARE>
+template <class SHARE>
 class ShareLogWriterT : public ShareLogWriter {
   atomic<bool> running_;
   string dataDir_;  // where to put sharelog data files
-  
+
   // zlib/gzip compression level: -1 to 9.
   // -1: defaule level, 0: non-compression, 1: best speed, 9: best size.
   int compressionLevel_;
 
   // key:   timestamp - (timestamp % 86400)
   // value: zstr::ofstream *
-  std::map<uint32_t, zstr::ofstream *> fileHandlers_;
+  std::map<uint32_t, zstr::ofstream*> fileHandlers_;
   std::vector<SHARE> shares_;
 
   const string chainType_;
   KafkaHighLevelConsumer hlConsumer_;  // consume topic: shareLogTopic
 
   zstr::ofstream* getFileHandler(uint32_t ts);
-  void consumeShareLog(rd_kafka_message_t *rkmessage);
+  void consumeShareLog(rd_kafka_message_t* rkmessage);
   bool flushToDisk();
   void tryCloseOldHanders();
 
-public:
-  ShareLogWriterT(const char *chainType, const char *kafkaBrokers, const string &dataDir,
-                  const string &kafkaGroupID, const char *shareLogTopic,
+ public:
+  ShareLogWriterT(const char* chainType,
+                  const char* kafkaBrokers,
+                  const string& dataDir,
+                  const string& kafkaGroupID,
+                  const char* shareLogTopic,
                   const int compressionLevel = Z_DEFAULT_COMPRESSION);
   ~ShareLogWriterT();
 
@@ -78,4 +81,4 @@ public:
 
 #include "ShareLogger.inl"
 
-#endif // SHARELOGGER_H_
+#endif  // SHARELOGGER_H_

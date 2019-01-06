@@ -29,9 +29,8 @@
 #include "GwMaker.h"
 #include "utilities_js.hpp"
 
-class GwMakerHandlerSia : public GwMakerHandler 
-{
-  string processRawGw(const string &gw) override;
+class GwMakerHandlerSia : public GwMakerHandler {
+  string processRawGw(const string& gw) override;
   string getRequestData() override { return ""; }
   string getUserAgent() override { return "Sia-Agent"; }
 };

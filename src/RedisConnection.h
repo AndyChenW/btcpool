@@ -30,7 +30,7 @@
 
 using namespace std;
 
-/* 
+/*
 * Possible values of `redisReply->type`:
 *   REDIS_REPLY_STRING    1
 *   REDIS_REPLY_ARRAY     2
@@ -43,17 +43,17 @@ using namespace std;
 
 /////////////////////////////// RedisResult ///////////////////////////////
 class RedisResult {
-  redisReply *reply_;
+  redisReply* reply_;
 
-public:
+ public:
   RedisResult();
-  RedisResult(redisReply *reply);
-  RedisResult(RedisResult &&other);                        // move constructor
-  RedisResult(const RedisResult &other) = delete;          // copy constructor
-  RedisResult& operator=(const RedisResult& str) = delete; // assign operation
+  RedisResult(redisReply* reply);
+  RedisResult(RedisResult&& other);                         // move constructor
+  RedisResult(const RedisResult& other) = delete;           // copy constructor
+  RedisResult& operator=(const RedisResult& str) = delete;  // assign operation
   ~RedisResult();
 
-  void reset(redisReply *reply);
+  void reset(redisReply* reply);
 
   bool empty();
   int type();
@@ -64,54 +64,52 @@ public:
 
 /////////////////////////////// RedisConnectInfo ///////////////////////////////
 class RedisConnectInfo {
-public:
-  string  host_;
+ public:
+  string host_;
   int32_t port_;
   string passwd_;
 
-  RedisConnectInfo(const string &host, int32_t port, const string &passwd) :
-    host_(host), port_(port), passwd_(passwd)
-  {
+  RedisConnectInfo(const string& host, int32_t port, const string& passwd)
+      : host_(host), port_(port), passwd_(passwd) {}
+
+  RedisConnectInfo(const RedisConnectInfo& r) {
+    host_ = r.host_;
+    port_ = r.port_;
+    passwd_ = r.passwd_;
   }
 
-  RedisConnectInfo(const RedisConnectInfo &r) {
-    host_     = r.host_;
-    port_     = r.port_;
-    passwd_   = r.passwd_;
-  }
-
-  RedisConnectInfo& operator=(const RedisConnectInfo &r) {
-    host_     = r.host_;
-    port_     = r.port_;
-    passwd_   = r.passwd_;
+  RedisConnectInfo& operator=(const RedisConnectInfo& r) {
+    host_ = r.host_;
+    port_ = r.port_;
+    passwd_ = r.passwd_;
     return *this;
   }
 };
 
 /////////////////////////////// RedisConnection ///////////////////////////////
 class RedisConnection {
-protected:
+ protected:
   RedisConnectInfo connInfo_;
-  redisContext *conn_;
+  redisContext* conn_;
 
   bool _ping();
 
-public:
-  RedisConnection(const RedisConnectInfo &connInfo);
+ public:
+  RedisConnection(const RedisConnectInfo& connInfo);
 
   bool open();
   void close();
   bool ping();
 
   // execute redis command synchronized
-  RedisResult execute(const string &command);
+  RedisResult execute(const string& command);
   RedisResult execute(initializer_list<const string> args);
-  RedisResult execute(const vector<string> &args);
+  RedisResult execute(const vector<string>& args);
 
   // execute redis command & get reply with pipeline
-  void prepare(const string &command);
+  void prepare(const string& command);
   void prepare(initializer_list<const string> args);
-  void prepare(const vector<string> &args);
+  void prepare(const vector<string>& args);
   RedisResult execute();
 };
 

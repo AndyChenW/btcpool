@@ -38,101 +38,96 @@
 #include <set>
 #include <boost/thread/shared_mutex.hpp>
 
-#define BTCCOM_WATCHER_AGENT   "btc.com-watcher/0.2"
-
+#define BTCCOM_WATCHER_AGENT "btc.com-watcher/0.2"
 
 class PoolWatchClient;
 class ClientContainer;
 
-
 ///////////////////////////////// ClientContainer //////////////////////////////
 class ClientContainer {
-protected:
+ protected:
   atomic<bool> running_;
   bool disableChecking_;
-  vector<PoolWatchClient *> clients_;
+  vector<PoolWatchClient*> clients_;
 
   // libevent2
-  struct event_base *base_;
+  struct event_base* base_;
 
   string kafkaBrokers_;
 
   thread threadStratumJobConsume_;
 
   void runThreadStratumJobConsume();
-  void consumeStratumJob(rd_kafka_message_t *rkmessage);
-  KafkaProducer kafkaProducer_;  // produce GBT message
+  void consumeStratumJob(rd_kafka_message_t* rkmessage);
+  KafkaProducer kafkaProducer_;            // produce GBT message
   KafkaConsumer kafkaStratumJobConsumer_;  // consume topic: 'StratumJob'
 
   virtual void consumeStratumJobInternal(const string& str) = 0;
   virtual string createOnConnectedReplyString() const = 0;
-  virtual PoolWatchClient* createPoolWatchClient( 
-                struct event_base *base, 
-                const string &poolName, const string &poolHost,
-                const int16_t poolPort, const string &workerName) = 0;
+  virtual PoolWatchClient* createPoolWatchClient(struct event_base* base,
+                                                 const string& poolName,
+                                                 const string& poolHost,
+                                                 const int16_t poolPort,
+                                                 const string& workerName) = 0;
 
-  ClientContainer(const string &kafkaBrokers, const string &consumerTopic, const string &producerTopic,
+  ClientContainer(const string& kafkaBrokers,
+                  const string& consumerTopic,
+                  const string& producerTopic,
                   bool disableChecking);
 
-public:
+ public:
   virtual ~ClientContainer();
 
-  bool addPools(const string &poolName, const string &poolHost,
-                const int16_t poolPort, const string &workerName);
+  bool addPools(const string& poolName,
+                const string& poolHost,
+                const int16_t poolPort,
+                const string& workerName);
   virtual bool init();
   void run();
   void stop();
 
-  void removeAndCreateClient(PoolWatchClient *client);
+  void removeAndCreateClient(PoolWatchClient* client);
 
-
-  static void readCallback (struct bufferevent *bev, void *ptr);
-  static void eventCallback(struct bufferevent *bev, short events, void *ptr);
-
+  static void readCallback(struct bufferevent* bev, void* ptr);
+  static void eventCallback(struct bufferevent* bev, short events, void* ptr);
 };
-
 
 ///////////////////////////////// PoolWatchClient //////////////////////////////
 class PoolWatchClient {
-protected:
+ protected:
   bool disableChecking_;
-  struct bufferevent *bev_;
+  struct bufferevent* bev_;
 
   bool handleMessage();
-  virtual void handleStratumMessage(const string &line) = 0;
+  virtual void handleStratumMessage(const string& line) = 0;
 
-public:
-  enum State {
-    INIT          = 0,
-    CONNECTED     = 1,
-    SUBSCRIBED    = 2,
-    AUTHENTICATED = 3
-  };
+ public:
+  enum State { INIT = 0, CONNECTED = 1, SUBSCRIBED = 2, AUTHENTICATED = 3 };
   State state_;
-  ClientContainer *container_;
+  ClientContainer* container_;
 
-  string  poolName_;
-  string  poolHost_;
+  string poolName_;
+  string poolHost_;
   int16_t poolPort_;
-  string  workerName_;
+  string workerName_;
 
-protected:
-  PoolWatchClient(struct event_base *base, ClientContainer *container,
+ protected:
+  PoolWatchClient(struct event_base* base,
+                  ClientContainer* container,
                   bool disableChecking,
-                  const string &poolName,
-                  const string &poolHost, const int16_t poolPort,
-                  const string &workerName);
+                  const string& poolName,
+                  const string& poolHost,
+                  const int16_t poolPort,
+                  const string& workerName);
 
-public:
+ public:
   virtual ~PoolWatchClient();
 
   bool connect();
 
   void recvData();
-  void sendData(const char *data, size_t len);
-  inline void sendData(const string &str) {
-    sendData(str.data(), str.size());
-  }
+  void sendData(const char* data, size_t len);
+  inline void sendData(const string& str) { sendData(str.data(), str.size()); }
 };
 
 #endif

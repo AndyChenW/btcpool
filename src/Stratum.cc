@@ -32,16 +32,14 @@
 #include <hash.h>
 
 // filter for woker name and miner agent
-string filterWorkerName(const string &workerName) {
+string filterWorkerName(const string& workerName) {
   string s;
   s.reserve(workerName.size());
 
-  for (const auto &c : workerName) {
-    if (('a' <= c && c <= 'z') ||
-        ('A' <= c && c <= 'Z') ||
-        ('0' <= c && c <= '9') ||
-        c == '-' || c == '.' || c == '_' || c == ':' ||
-        c == '|' || c == '^' || c == '/') {
+  for (const auto& c : workerName) {
+    if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
+        ('0' <= c && c <= '9') || c == '-' || c == '.' || c == '_' ||
+        c == ':' || c == '|' || c == '^' || c == '/') {
       s += c;
     }
   }
@@ -49,9 +47,8 @@ string filterWorkerName(const string &workerName) {
   return s;
 }
 
-
 //////////////////////////////// StratumStatus ////////////////////////////////
-const char * StratumStatus::toString(int err) {
+const char* StratumStatus::toString(int err) {
   switch (err) {
     case ACCEPT:
       return "Share accepted";
@@ -97,13 +94,14 @@ const char * StratumStatus::toString(int err) {
       return "Client is not a stratum switcher";
 #endif
 
-    case UNKNOWN: default:
+    case UNKNOWN:
+    default:
       return "Unknown";
   }
 }
 
 //////////////////////////////// StratumWorker ////////////////////////////////
-StratumWorker::StratumWorker(): userId_(0), workerHashId_(0) {}
+StratumWorker::StratumWorker() : userId_(0), workerHashId_(0) {}
 
 void StratumWorker::reset() {
   userId_ = 0;
@@ -114,7 +112,7 @@ void StratumWorker::reset() {
   workerName_.clear();
 }
 
-string StratumWorker::getUserName(const string &fullName) const {
+string StratumWorker::getUserName(const string& fullName) const {
   auto pos = fullName.find(".");
   if (pos == fullName.npos) {
     return fullName;
@@ -122,16 +120,17 @@ string StratumWorker::getUserName(const string &fullName) const {
   return fullName.substr(0, pos);
 }
 
-void StratumWorker::setUserIDAndNames(const int32_t userId, const string &fullName) {
+void StratumWorker::setUserIDAndNames(const int32_t userId,
+                                      const string& fullName) {
   reset();
   userId_ = userId;
 
   auto pos = fullName.find(".");
   if (pos == fullName.npos) {
-    userName_   = fullName;
+    userName_ = fullName;
   } else {
-    userName_   = fullName.substr(0, pos);
-    workerName_ = fullName.substr(pos+1);
+    userName_ = fullName.substr(0, pos);
+    workerName_ = fullName.substr(pos + 1);
   }
 
   // the worker name will insert to DB, so must be filter
@@ -150,7 +149,7 @@ void StratumWorker::setUserIDAndNames(const int32_t userId, const string &fullNa
   fullName_ = userName_ + "." + workerName_;
 }
 
-int64_t StratumWorker::calcWorkerId(const string &workerName) {
+int64_t StratumWorker::calcWorkerId(const string& workerName) {
   int64_t workerHashId = 0;
 
   // calc worker hash id, 64bits
@@ -158,9 +157,9 @@ int64_t StratumWorker::calcWorkerId(const string &workerName) {
   const uint256 workerNameHash = Hash(workerName.begin(), workerName.end());
 
   // need to convert to uint64_t first than copy memory
-  const uint64_t tmpId = strtoull(workerNameHash.ToString().substr(0, 16).c_str(),
-                                  nullptr, 16);
-  memcpy((uint8_t *)&workerHashId, (uint8_t *)&tmpId, 8);
+  const uint64_t tmpId =
+      strtoull(workerNameHash.ToString().substr(0, 16).c_str(), nullptr, 16);
+  memcpy((uint8_t*)&workerHashId, (uint8_t*)&tmpId, 8);
 
   if (workerHashId == 0) {  // zero is kept
     workerHashId++;
@@ -170,12 +169,6 @@ int64_t StratumWorker::calcWorkerId(const string &workerName) {
 }
 
 //////////////////////////////////  StratumJob  ////////////////////////////////
-StratumJob::StratumJob()
-  : jobId_(0)
-{
-}
+StratumJob::StratumJob() : jobId_(0) {}
 
-StratumJob::~StratumJob()
-{
-  
-}
+StratumJob::~StratumJob() {}

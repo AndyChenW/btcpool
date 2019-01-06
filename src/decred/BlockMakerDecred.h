@@ -29,14 +29,17 @@
 #include "StratumDecred.h"
 
 class BlockMakerDecred : public BlockMaker {
-public:
-  BlockMakerDecred(shared_ptr<BlockMakerDefinition> def, const char *kafkaBrokers, const MysqlConnectInfo &poolDB);
+ public:
+  BlockMakerDecred(shared_ptr<BlockMakerDefinition> def,
+                   const char* kafkaBrokers,
+                   const MysqlConnectInfo& poolDB);
 
-protected:
-  void processSolvedShare(rd_kafka_message_t *rkmessage) override;
+ protected:
+  void processSolvedShare(rd_kafka_message_t* rkmessage) override;
 
-private:
-  void submitBlockHeader(const NodeDefinition& node, const BlockHeaderDecred& header);
+ private:
+  void submitBlockHeader(const NodeDefinition& node,
+                         const BlockHeaderDecred& header);
   void saveBlockToDB(const FoundBlockDecred& foundBlock);
 };
 

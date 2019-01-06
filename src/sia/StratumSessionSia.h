@@ -29,28 +29,31 @@
 #include "StratumServerSia.h"
 
 class StratumSessionSia : public StratumSessionBase<StratumTraitsSia> {
-public:
-  StratumSessionSia(ServerSia &server,
-                    struct bufferevent *bev,
-                    struct sockaddr *saddr,
+ public:
+  StratumSessionSia(ServerSia& server,
+                    struct bufferevent* bev,
+                    struct sockaddr* saddr,
                     uint32_t extraNonce1);
-  void sendSetDifficulty(LocalJob &localJob, uint64_t difficulty) override;
-  void sendMiningNotify(shared_ptr<StratumJobEx> exJobPtr, bool isFirstJob) override;
+  void sendSetDifficulty(LocalJob& localJob, uint64_t difficulty) override;
+  void sendMiningNotify(shared_ptr<StratumJobEx> exJobPtr,
+                        bool isFirstJob) override;
 
-protected:
-  void handleRequest(const std::string &idStr, const std::string &method,
-                     const JsonNode &jparams, const JsonNode &jroot) override;
-  void handleRequest_Subscribe(const std::string &idStr,
-                               const JsonNode &jparams,
-                               const JsonNode &jroot);
+ protected:
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
+  void handleRequest_Subscribe(const std::string& idStr,
+                               const JsonNode& jparams,
+                               const JsonNode& jroot);
 
-public:
-  std::unique_ptr<StratumMiner> createMiner(const std::string &clientAgent,
-                                            const std::string &workerName,
+ public:
+  std::unique_ptr<StratumMiner> createMiner(const std::string& clientAgent,
+                                            const std::string& workerName,
                                             int64_t workerId) override;
 
-private:
-  uint8_t shortJobId_;    //Claymore jobId starts from 0
+ private:
+  uint8_t shortJobId_;  // Claymore jobId starts from 0
 };
 
 #endif  // #ifndef STRATUM_SESSION_SIA_H_

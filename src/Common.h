@@ -1,4 +1,4 @@
-/* 
+/*
  The MIT License (MIT)
 
  Copyright (c) [2016] [BTC.COM]
@@ -69,7 +69,6 @@ typedef lock_guard<mutex> ScopeLock;
 typedef unique_lock<mutex> UniqueLock;
 typedef condition_variable Condition;
 
-
 /**
  * byte order conversion utils
  */
@@ -78,20 +77,18 @@ inline uint16_t HToBe(uint16_t v) {
   return (v >> 8) | (v << 8);
 }
 inline uint32_t HToBe(uint32_t v) {
-  return ((v & 0xff000000) >> 24) |
-  ((v & 0x00ff0000) >> 8) |
-  ((v & 0x0000ff00) << 8) |
-  ((v & 0x000000ff) << 24);
+  return ((v & 0xff000000) >> 24) | ((v & 0x00ff0000) >> 8) |
+         ((v & 0x0000ff00) << 8) | ((v & 0x000000ff) << 24);
 }
 inline uint64_t HToBe(uint64_t v) {
   return ((v & 0xff00000000000000ULL) >> 56) |
-  ((v & 0x00ff000000000000ULL) >> 40) |
-  ((v & 0x0000ff0000000000ULL) >> 24) |
-  ((v & 0x000000ff00000000ULL) >>  8) |
-  ((v & 0x00000000ff000000ULL) <<  8) |
-  ((v & 0x0000000000ff0000ULL) << 24) |
-  ((v & 0x000000000000ff00ULL) << 40) |
-  ((v & 0x00000000000000ffULL) << 56);
+         ((v & 0x00ff000000000000ULL) >> 40) |
+         ((v & 0x0000ff0000000000ULL) >> 24) |
+         ((v & 0x000000ff00000000ULL) >> 8) |
+         ((v & 0x00000000ff000000ULL) << 8) |
+         ((v & 0x0000000000ff0000ULL) << 24) |
+         ((v & 0x000000000000ff00ULL) << 40) |
+         ((v & 0x00000000000000ffULL) << 56);
 }
 #else
 inline uint16_t HToBe(uint16_t v) {
@@ -114,7 +111,7 @@ inline int64_t HToBe(int64_t v) {
   return (int64_t)HToBe((uint64_t)v);
 }
 
-uint32_t djb2(const char *str);
+uint32_t djb2(const char* str);
 uint64_t formatDifficulty(const uint64_t diff);
 
 #endif

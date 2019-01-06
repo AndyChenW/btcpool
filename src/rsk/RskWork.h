@@ -41,7 +41,7 @@
 using std::string;
 
 class RskWork {
-protected:
+ protected:
   u_int32_t created_at;
   string blockHash_;
   string target_;
@@ -51,11 +51,11 @@ protected:
   bool notifyFlag_;
   bool initialized_;
 
-public:
+ public:
   RskWork();
-  virtual ~RskWork() {};
+  virtual ~RskWork(){};
 
-  bool initFromGw(const string &rawGetWork);
+  bool initFromGw(const string& rawGetWork);
   bool isInitialized() const;
   u_int32_t getCreatedAt() const;
   string getBlockHash() const;
@@ -64,16 +64,16 @@ public:
   string getRpcAddress() const;
   string getRpcUserPwd() const;
   bool getNotifyFlag() const;
-  
-private:
-  virtual bool validate(JsonNode &work);
-  virtual void initialize(JsonNode &work); 
+
+ private:
+  virtual bool validate(JsonNode& work);
+  virtual void initialize(JsonNode& work);
 };
 
 class RskWorkEth : public RskWork {
-  virtual bool validate(JsonNode &work);
-  virtual void initialize(JsonNode &work);
-  
+  virtual bool validate(JsonNode& work);
+  virtual void initialize(JsonNode& work);
+
   string seedHash_;
   string parent_;
   uint32_t height_;
@@ -81,7 +81,7 @@ class RskWorkEth : public RskWork {
   uint32_t transactions_;
   float gasUsedPercent_;
 
-public:
+ public:
   string getSeedHash() const { return seedHash_; }
   string getParent() const { return parent_; }
   uint32_t getHeight() const { return height_; }

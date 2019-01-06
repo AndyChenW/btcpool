@@ -24,7 +24,6 @@
 #ifndef SHARELOGPARSER_ETH_H_
 #define SHARELOGPARSER_ETH_H_
 
-
 #include "ShareLogParser.h"
 
 #include "StratumEth.h"
@@ -34,4 +33,4 @@ using ShareLogDumperEth = ShareLogDumperT<ShareEth>;
 using ShareLogParserEth = ShareLogParserT<ShareEth>;
 using ShareLogParserServerEth = ShareLogParserServerT<ShareEth>;
 
-#endif // SHARELOGPARSER_H_
+#endif  // SHARELOGPARSER_H_

@@ -30,4 +30,4 @@
 ////////////////////////////  Alias  ////////////////////////////
 using StatsServerBitcoin = StatsServerT<ShareBitcoin>;
 
-#endif // STATSHTTPD_BYTOM_H_
+#endif  // STATSHTTPD_BYTOM_H_

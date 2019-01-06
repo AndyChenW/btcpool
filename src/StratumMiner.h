@@ -37,33 +37,38 @@ class IStratumSession;
 
 //////////////////////////////// StratumMiner ////////////////////////////////
 class StratumMiner {
-protected:
+ protected:
   static const int INVALID_SHARE_SLIDING_WINDOWS_SIZE = 60;  // unit: seconds
-  static const int64_t INVALID_SHARE_SLIDING_WINDOWS_MAX_LIMIT = 20;  // max number
-  StratumMiner(IStratumSession &session,
-               const DiffController &diffController,
-               const std::string &clientAgent,
-               const std::string &workerName,
+  static const int64_t INVALID_SHARE_SLIDING_WINDOWS_MAX_LIMIT =
+      20;  // max number
+  StratumMiner(IStratumSession& session,
+               const DiffController& diffController,
+               const std::string& clientAgent,
+               const std::string& workerName,
                int64_t workerId);
-public:
+
+ public:
   static const size_t kExtraNonce2Size_ = 8;
   virtual ~StratumMiner() = default;
-  virtual void handleRequest(const std::string &idStr,
-                             const std::string &method,
-                             const JsonNode &jparams,
-                             const JsonNode &jroot) = 0;
-  virtual void handleExMessage(const std::string &exMessage) {}; // No agent support by default
+  virtual void handleRequest(const std::string& idStr,
+                             const std::string& method,
+                             const JsonNode& jparams,
+                             const JsonNode& jroot) = 0;
+  virtual void handleExMessage(
+      const std::string& exMessage){};  // No agent support by default
   void setMinDiff(uint64_t minDiff);
   void resetCurDiff(uint64_t curDiff);
   uint64_t getCurDiff() const { return curDiff_; };
   uint64_t calcCurDiff();
-  virtual uint64_t addLocalJob(LocalJob &localJob) = 0;
-  virtual void removeLocalJob( LocalJob &localJob) = 0;
+  virtual uint64_t addLocalJob(LocalJob& localJob) = 0;
+  virtual void removeLocalJob(LocalJob& localJob) = 0;
 
-protected:
-  bool handleShare(const std::string &idStr, int32_t status, uint64_t shareDiff);
+ protected:
+  bool handleShare(const std::string& idStr,
+                   int32_t status,
+                   uint64_t shareDiff);
 
-  IStratumSession &session_;
+  IStratumSession& session_;
   std::unique_ptr<DiffController> diffController_;
   uint64_t curDiff_;
   std::string clientAgent_;
@@ -74,40 +79,45 @@ protected:
   StatsWindow<int64_t> invalidSharesCounter_;
 };
 
-template<typename StratumTraits>
+template <typename StratumTraits>
 class StratumMinerBase : public StratumMiner {
   using SessionType = typename StratumTraits::SessionType;
   using JobDiffType = typename StratumTraits::JobDiffType;
-protected:
-  StratumMinerBase(SessionType &session,
-                   const DiffController &diffController,
-                   const std::string &clientAgent,
-                   const std::string &workerName,
+
+ protected:
+  StratumMinerBase(SessionType& session,
+                   const DiffController& diffController,
+                   const std::string& clientAgent,
+                   const std::string& workerName,
                    int64_t workerId)
-      : StratumMiner(session, diffController, clientAgent, workerName, workerId) {
-    for (auto &localJob : session.getLocalJobs()) {
+      : StratumMiner(session,
+                     diffController,
+                     clientAgent,
+                     workerName,
+                     workerId) {
+    for (auto& localJob : session.getLocalJobs()) {
       addLocalJob(localJob);
     }
   }
 
-public:
-  SessionType &getSession() const {
-    return static_cast<SessionType &>(session_);
+ public:
+  SessionType& getSession() const {
+    return static_cast<SessionType&>(session_);
   }
 
-  uint64_t addLocalJob(LocalJob &localJob) override {
+  uint64_t addLocalJob(LocalJob& localJob) override {
     uint64_t curDiff = calcCurDiff();
     // Overload the assignment operator of JobDiffType to add customizations
     jobDiffs_[&localJob] = curDiff;
     return curDiff;
   }
 
-  void removeLocalJob(LocalJob &localJob) override {
+  void removeLocalJob(LocalJob& localJob) override {
     jobDiffs_.erase(&localJob);
   }
 
-protected:
-  std::map<const LocalJob *, JobDiffType> jobDiffs_;
+ protected:
+  std::map<const LocalJob*, JobDiffType> jobDiffs_;
 };
 
-#endif // #define STRATUM_MINER_H_
+#endif  // #define STRATUM_MINER_H_

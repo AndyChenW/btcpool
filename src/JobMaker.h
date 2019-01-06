@@ -41,7 +41,7 @@ using std::shared_ptr;
 //     msg: kafka message.
 // Return:
 //     if true, JobMaker will try generate a new job.
-using JobMakerMessageProcessor = std::function<bool(const string &msg)>;
+using JobMakerMessageProcessor = std::function<bool(const string& msg)>;
 
 struct JobMakerConsumerHandler {
   string kafkaTopic_;
@@ -49,8 +49,7 @@ struct JobMakerConsumerHandler {
   JobMakerMessageProcessor messageProcessor_;
 };
 
-struct JobMakerDefinition
-{
+struct JobMakerDefinition {
   virtual ~JobMakerDefinition() {}
 
   string chainType_;
@@ -64,8 +63,7 @@ struct JobMakerDefinition
   string fileLastJobTime_;
 };
 
-struct GwJobMakerDefinition : public JobMakerDefinition
-{
+struct GwJobMakerDefinition : public JobMakerDefinition {
   virtual ~GwJobMakerDefinition() {}
 
   string rawGwTopic_;
@@ -73,16 +71,15 @@ struct GwJobMakerDefinition : public JobMakerDefinition
   uint32_t workLifeTime_;
 };
 
-struct GbtJobMakerDefinition : public JobMakerDefinition
-{
+struct GbtJobMakerDefinition : public JobMakerDefinition {
   virtual ~GbtJobMakerDefinition() {}
 
   bool testnet_;
-  
+
   string payoutAddr_;
   string coinbaseInfo_;
   uint32_t blockVersion_;
-  
+
   string rawGbtTopic_;
   string auxPowGwTopic_;
   string rskRawGwTopic_;
@@ -94,43 +91,54 @@ struct GbtJobMakerDefinition : public JobMakerDefinition
   uint32_t mergedMiningNotifyPolicy_;
 };
 
-class JobMakerHandler
-{
-public:
+class JobMakerHandler {
+ public:
   virtual ~JobMakerHandler() {}
 
-  virtual bool init(shared_ptr<JobMakerDefinition> def) { def_ = def; return true; }
+  virtual bool init(shared_ptr<JobMakerDefinition> def) {
+    def_ = def;
+    return true;
+  }
 
-  virtual bool initConsumerHandlers(const string &kafkaBrokers, vector<JobMakerConsumerHandler> &handlers) = 0;
+  virtual bool initConsumerHandlers(
+      const string& kafkaBrokers,
+      vector<JobMakerConsumerHandler>& handlers) = 0;
   virtual string makeStratumJobMsg() = 0;
 
   // read-only definition
   inline shared_ptr<const JobMakerDefinition> def() { return def_; }
-  JobMakerConsumerHandler createConsumerHandler(const string &kafkaBrokers, const string &topic, int64_t offset
-    , vector<pair<string, string>> consumerOptions, JobMakerMessageProcessor messageProcessor);
+  JobMakerConsumerHandler createConsumerHandler(
+      const string& kafkaBrokers,
+      const string& topic,
+      int64_t offset,
+      vector<pair<string, string>> consumerOptions,
+      JobMakerMessageProcessor messageProcessor);
 
   uint64_t generateJobId(uint32_t hash) const;
 
-protected:
+ protected:
   shared_ptr<JobMakerDefinition> def_;
 };
 
-class GwJobMakerHandler : public JobMakerHandler
-{
-public:
+class GwJobMakerHandler : public JobMakerHandler {
+ public:
   virtual ~GwJobMakerHandler() {}
 
-  virtual bool initConsumerHandlers(const string &kafkaBrokers, vector<JobMakerConsumerHandler> &handlers) override;
+  virtual bool initConsumerHandlers(
+      const string& kafkaBrokers,
+      vector<JobMakerConsumerHandler>& handlers) override;
 
-  //return true if need to produce stratum job
-  virtual bool processMsg(const string &msg) = 0;
+  // return true if need to produce stratum job
+  virtual bool processMsg(const string& msg) = 0;
 
   // read-only definition
-  inline shared_ptr<const GwJobMakerDefinition> def() { return std::dynamic_pointer_cast<const GwJobMakerDefinition>(def_); }
+  inline shared_ptr<const GwJobMakerDefinition> def() {
+    return std::dynamic_pointer_cast<const GwJobMakerDefinition>(def_);
+  }
 };
 
 class JobMaker {
-protected:
+ protected:
   shared_ptr<JobMakerHandler> handler_;
   atomic<bool> running_;
 
@@ -140,27 +148,31 @@ protected:
 
   string kafkaBrokers_;
   KafkaProducer kafkaProducer_;
-  
+
   vector<JobMakerConsumerHandler> kafkaConsumerHandlers_;
   vector<shared_ptr<thread>> kafkaConsumerWorkers_;
 
   time_t lastJobTime_;
-  
-protected:
-  bool consumeKafkaMsg(rd_kafka_message_t *rkmessage, JobMakerConsumerHandler &consumerHandler);
 
-public:
+ protected:
+  bool consumeKafkaMsg(rd_kafka_message_t* rkmessage,
+                       JobMakerConsumerHandler& consumerHandler);
+
+ public:
   void produceStratumJob();
-  void runThreadKafkaConsume(JobMakerConsumerHandler &consumerHandler);
+  void runThreadKafkaConsume(JobMakerConsumerHandler& consumerHandler);
 
-public:
-  JobMaker(shared_ptr<JobMakerHandler> handle, const string& kafkaBrokers, const string& zookeeperBrokers);
+ public:
+  JobMaker(shared_ptr<JobMakerHandler> handle,
+           const string& kafkaBrokers,
+           const string& zookeeperBrokers);
   virtual ~JobMaker();
 
   bool init();
   void stop();
   void run();
-private:
+
+ private:
   bool setupKafkaProducer();
 };
 

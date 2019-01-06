@@ -27,9 +27,8 @@
 #include <limits.h>
 
 ///////////////////////////////GwMakerHandlerDecred////////////////////////////////////
-bool GwMakerHandlerDecred::checkFields(JsonNode &r) {
-  if (r.type() != Utilities::JS::type::Array ||
-      r.array().size() != 2) {
+bool GwMakerHandlerDecred::checkFields(JsonNode& r) {
+  if (r.type() != Utilities::JS::type::Array || r.array().size() != 2) {
     return false;
   }
 
@@ -52,7 +51,7 @@ bool GwMakerHandlerDecred::checkFields(JsonNode &r) {
   return true;
 }
 
-string GwMakerHandlerDecred::constructRawMsg(JsonNode &r) {
+string GwMakerHandlerDecred::constructRawMsg(JsonNode& r) {
   auto& r0 = r.array().at(0);
   auto& r1 = r.array().at(1);
   LOG(INFO) << "chain: " << def_.chainType_ << ", topic: " << def_.rawGwTopic_
@@ -60,18 +59,15 @@ string GwMakerHandlerDecred::constructRawMsg(JsonNode &r) {
             << ", target: " << r1["result"]["target"].str()
             << ", network: " << r0["result"].uint32();
 
-  return Strings::Format("{\"created_at_ts\":%u,"
-                         "\"chainType\":\"%s\","
-                         "\"rpcAddress\":\"%s\","
-                         "\"rpcUserPwd\":\"%s\","
-                         "\"data\":\"%s\","
-                         "\"target\":\"%s\","
-                         "\"network\":%u}",
-                         (uint32_t)time(nullptr),
-                         def_.chainType_.c_str(),
-                         def_.rpcAddr_.c_str(),
-                         def_.rpcUserPwd_.c_str(),
-                         r1["result"]["data"].str().c_str(),
-                         r1["result"]["target"].str().c_str(),
-                         r0["result"].uint32());
+  return Strings::Format(
+      "{\"created_at_ts\":%u,"
+      "\"chainType\":\"%s\","
+      "\"rpcAddress\":\"%s\","
+      "\"rpcUserPwd\":\"%s\","
+      "\"data\":\"%s\","
+      "\"target\":\"%s\","
+      "\"network\":%u}",
+      (uint32_t)time(nullptr), def_.chainType_.c_str(), def_.rpcAddr_.c_str(),
+      def_.rpcUserPwd_.c_str(), r1["result"]["data"].str().c_str(),
+      r1["result"]["target"].str().c_str(), r0["result"].uint32());
 }

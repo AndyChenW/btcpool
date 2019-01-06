@@ -32,25 +32,25 @@
 #include <random>
 
 static map<string, StratumClient::Factory> gStratumClientFactories;
-bool StratumClient::registerFactory(const string &chainType, Factory factory)
-{
+bool StratumClient::registerFactory(const string& chainType, Factory factory) {
   return gStratumClientFactories.emplace(chainType, move(factory)).second;
 }
 
 ///////////////////////////////// StratumClient ////////////////////////////////
 StratumClient::StratumClient(struct event_base* base,
-                             const string &workerFullName,
-                             const string &workerPasswd)
-: workerFullName_(workerFullName), workerPasswd_(workerPasswd), isMining_(false)
-{
+                             const string& workerFullName,
+                             const string& workerPasswd)
+    : workerFullName_(workerFullName),
+      workerPasswd_(workerPasswd),
+      isMining_(false) {
   inBuf_ = evbuffer_new();
-  bev_ = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE|BEV_OPT_THREADSAFE);
+  bev_ = bufferevent_socket_new(base, -1,
+                                BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
   assert(bev_ != nullptr);
 
-  bufferevent_setcb(bev_,
-                    StratumClientWrapper::readCallback, nullptr,
+  bufferevent_setcb(bev_, StratumClientWrapper::readCallback, nullptr,
                     StratumClientWrapper::eventCallback, this);
-  bufferevent_enable(bev_, EV_READ|EV_WRITE);
+  bufferevent_enable(bev_, EV_READ | EV_WRITE);
 
   state_ = INIT;
   latestDiff_ = 1;
@@ -71,17 +71,18 @@ StratumClient::~StratumClient() {
   bufferevent_free(bev_);
 }
 
-bool StratumClient::connect(struct sockaddr_in &sin) {
+bool StratumClient::connect(struct sockaddr_in& sin) {
   // bufferevent_socket_connect(): This function returns 0 if the connect
   // was successfully launched, and -1 if an error occurred.
-  int res = bufferevent_socket_connect(bev_, (struct sockaddr *)&sin, sizeof(sin));
+  int res =
+      bufferevent_socket_connect(bev_, (struct sockaddr*)&sin, sizeof(sin));
   if (res == 0) {
     return true;
   }
   return false;
 }
 
-void StratumClient::readBuf(struct evbuffer *buf) {
+void StratumClient::readBuf(struct evbuffer* buf) {
   // moves all data from src to the end of dst
   evbuffer_add_buffer(inBuf_, buf);
 
@@ -91,9 +92,9 @@ void StratumClient::readBuf(struct evbuffer *buf) {
   }
 }
 
-bool StratumClient::tryReadLine(string &line) {
+bool StratumClient::tryReadLine(string& line) {
   line.clear();
-  
+
   // find eol
   struct evbuffer_ptr loc;
   loc = evbuffer_search_eol(inBuf_, nullptr, nullptr, EVBUFFER_EOL_LF);
@@ -104,11 +105,11 @@ bool StratumClient::tryReadLine(string &line) {
   // copies and removes the first datlen bytes from the front of buf
   // into the memory at data
   line.resize(loc.pos + 1);  // containing "\n"
-  evbuffer_remove(inBuf_, (void *)line.data(), line.size());
+  evbuffer_remove(inBuf_, (void*)line.data(), line.size());
   return true;
 }
 
-void StratumClient::handleLine(const string &line) {
+void StratumClient::handleLine(const string& line) {
   DLOG(INFO) << "recv(" << line.size() << "): " << line;
 
   JsonNode jnode;
@@ -116,24 +117,21 @@ void StratumClient::handleLine(const string &line) {
     LOG(ERROR) << "decode line fail, not a json string";
     return;
   }
-  JsonNode jresult  = jnode["result"];
-  JsonNode jerror   = jnode["error"];
-  JsonNode jmethod  = jnode["method"];
+  JsonNode jresult = jnode["result"];
+  JsonNode jerror = jnode["error"];
+  JsonNode jmethod = jnode["method"];
 
   if (jmethod.type() == Utilities::JS::type::Str) {
-    JsonNode jparams  = jnode["params"];
+    JsonNode jparams = jnode["params"];
     auto jparamsArr = jparams.array();
 
     if (jmethod.str() == "mining.notify") {
       latestJobId_ = jparamsArr[0].str();
       DLOG(INFO) << "latestJobId_: " << latestJobId_;
-    }
-    else if (jmethod.str() == "mining.set_difficulty") {
+    } else if (jmethod.str() == "mining.set_difficulty") {
       latestDiff_ = jparamsArr[0].uint64();
       DLOG(INFO) << "latestDiff_: " << latestDiff_;
-    }
-    else
-    {
+    } else {
       LOG(ERROR) << "unknown method: " << line;
     }
     return;
@@ -143,10 +141,11 @@ void StratumClient::handleLine(const string &line) {
     //
     // {"error": null, "id": 2, "result": true}
     //
-    if (jerror.type()  != Utilities::JS::type::Null ||
+    if (jerror.type() != Utilities::JS::type::Null ||
         jresult.type() != Utilities::JS::type::Bool ||
         jresult.boolean() != true) {
-//      LOG(ERROR) << "json result is null, err: " << jerror.str() << ", line: " << line;
+      //      LOG(ERROR) << "json result is null, err: " << jerror.str() << ",
+      //      line: " << line;
     }
     return;
   }
@@ -166,15 +165,17 @@ void StratumClient::handleLine(const string &line) {
       return;
     }
 
-    extraNonce1_     = resArr[1].uint32_hex();
+    extraNonce1_ = resArr[1].uint32_hex();
     extraNonce2Size_ = resArr[2].int32();
-    DLOG(INFO) << "extraNonce1_: " << extraNonce1_ << ", extraNonce2Size_: " << extraNonce2Size_;
+    DLOG(INFO) << "extraNonce1_: " << extraNonce1_
+               << ", extraNonce2Size_: " << extraNonce2Size_;
 
     // mining.authorize
     state_ = SUBSCRIBED;
-    string s = Strings::Format("{\"id\": 1, \"method\": \"mining.authorize\","
-                               "\"params\": [\"\%s\", \"%s\"]}\n",
-                               workerFullName_.c_str(), workerPasswd_.c_str());
+    string s = Strings::Format(
+        "{\"id\": 1, \"method\": \"mining.authorize\","
+        "\"params\": [\"\%s\", \"%s\"]}\n",
+        workerFullName_.c_str(), workerPasswd_.c_str());
     sendData(s);
     return;
   }
@@ -185,50 +186,49 @@ void StratumClient::handleLine(const string &line) {
   }
 }
 
-string StratumClient::constructShare()
-{
+string StratumClient::constructShare() {
   extraNonce2_++;
   string extraNonce2Str;
   // little-endian
-  Bin2Hex((uint8_t *)&extraNonce2_, extraNonce2Size_, extraNonce2Str);
+  Bin2Hex((uint8_t*)&extraNonce2_, extraNonce2Size_, extraNonce2Str);
 
   // simulate miner
-  string s = Strings::Format("{\"params\": [\"%s\",\"%s\",\"%s\",\"%08x\",\"%08x\"]"
-                      ",\"id\":4,\"method\": \"mining.submit\"}\n",
-                      workerFullName_.c_str(),
-                      latestJobId_.c_str(),
-                      extraNonce2Str.c_str(),
-                      (uint32_t)time(nullptr) /* ntime */,
-                      (uint32_t)time(nullptr) /* nonce */);
+  string s = Strings::Format(
+      "{\"params\": [\"%s\",\"%s\",\"%s\",\"%08x\",\"%08x\"]"
+      ",\"id\":4,\"method\": \"mining.submit\"}\n",
+      workerFullName_.c_str(), latestJobId_.c_str(), extraNonce2Str.c_str(),
+      (uint32_t)time(nullptr) /* ntime */, (uint32_t)time(nullptr) /* nonce */);
   return s;
 }
 
-void StratumClient::submitShare()
-{
+void StratumClient::submitShare() {
   if (state_ != AUTHENTICATED)
     return;
 
   sendData(constructShare());
 }
 
-void StratumClient::sendData(const char *data, size_t len) {
+void StratumClient::sendData(const char* data, size_t len) {
   // add data to a bufferevent’s output buffer
   bufferevent_write(bev_, data, len);
   DLOG(INFO) << "send(" << len << "): " << data;
 }
 
-
 ////////////////////////////// StratumClientWrapper ////////////////////////////
-StratumClientWrapper::StratumClientWrapper(const char *host,
+StratumClientWrapper::StratumClientWrapper(const char* host,
                                            const uint32_t port,
                                            const uint32_t numConnections,
-                                           const string &userName,
-                                           const string &minerNamePrefix,
-                                           const string &passwd,
-                                           const string &type)
-    : running_(true), base_(event_base_new()), numConnections_(numConnections),
-      userName_(userName), minerNamePrefix_(minerNamePrefix), passwd_(passwd), type_(type)
-{
+                                           const string& userName,
+                                           const string& minerNamePrefix,
+                                           const string& passwd,
+                                           const string& type)
+    : running_(true),
+      base_(event_base_new()),
+      numConnections_(numConnections),
+      userName_(userName),
+      minerNamePrefix_(minerNamePrefix),
+      passwd_(passwd),
+      type_(type) {
   memset(&sin_, 0, sizeof(sin_));
   sin_.sin_family = AF_INET;
   inet_pton(AF_INET, host, &(sin_.sin_addr));
@@ -261,34 +261,42 @@ void StratumClientWrapper::stop() {
   LOG(INFO) << "StratumClientWrapper::stop...";
 }
 
-void StratumClientWrapper::eventCallback(struct bufferevent *bev,
-                                         short events, void *ptr) {
-  StratumClient *client = static_cast<StratumClient *>(ptr);
+void StratumClientWrapper::eventCallback(struct bufferevent* bev,
+                                         short events,
+                                         void* ptr) {
+  StratumClient* client = static_cast<StratumClient*>(ptr);
 
   if (events & BEV_EVENT_CONNECTED) {
     client->state_ = StratumClient::State::CONNECTED;
     // subscribe
-    client->sendData("{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"__simulator__/0.1\"]}\n");
-  }
-  else if (events & BEV_EVENT_ERROR) {
+    client->sendData(
+        "{\"id\":1,\"method\":\"mining.subscribe\",\"params\":[\"__simulator__/"
+        "0.1\"]}\n");
+  } else if (events & BEV_EVENT_ERROR) {
     /* An error occured while connecting. */
     // TODO
-    LOG(ERROR) << "event error: " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR());
+    LOG(ERROR) << "event error: "
+               << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR());
   }
 }
 
-void StratumClientWrapper::readCallback(struct bufferevent* bev, void *connection) {
-  StratumClient *client = static_cast<StratumClient *>(connection);
+void StratumClientWrapper::readCallback(struct bufferevent* bev,
+                                        void* connection) {
+  StratumClient* client = static_cast<StratumClient*>(connection);
   client->readBuf(bufferevent_get_input(bev));
 }
 
-void StratumClientWrapper::timerCallback(evutil_socket_t fd, short event, void *ptr) {
-  auto wrapper = static_cast<StratumClientWrapper *>(ptr);
+void StratumClientWrapper::timerCallback(evutil_socket_t fd,
+                                         short event,
+                                         void* ptr) {
+  auto wrapper = static_cast<StratumClientWrapper*>(ptr);
   wrapper->submitShares();
 }
 
-void StratumClientWrapper::signalCallback(evutil_socket_t fd, short event, void *ptr) {
-  auto wrapper = static_cast<StratumClientWrapper *>(ptr);
+void StratumClientWrapper::signalCallback(evutil_socket_t fd,
+                                          short event,
+                                          void* ptr) {
+  auto wrapper = static_cast<StratumClientWrapper*>(ptr);
   wrapper->stop();
 }
 
@@ -297,10 +305,8 @@ void StratumClientWrapper::run() {
   // create clients
   //
   for (size_t i = 0; i < numConnections_; i++) {
-    const string workerFullName = Strings::Format("%s.%s-%05d",
-                                                  userName_.c_str(),
-                                                  minerNamePrefix_.c_str(),
-                                                  i);
+    const string workerFullName = Strings::Format(
+        "%s.%s-%05d", userName_.c_str(), minerNamePrefix_.c_str(), i);
     auto client = createClient(base_, workerFullName, passwd_);
 
     if (!client->connect(sin_)) {
@@ -311,17 +317,23 @@ void StratumClientWrapper::run() {
   }
 
   // create timer
-  timer_ = event_new(base_, -1, EV_PERSIST, StratumClientWrapper::timerCallback, this);
+  timer_ = event_new(base_, -1, EV_PERSIST, StratumClientWrapper::timerCallback,
+                     this);
   // Submit a share every 15 seconds (in probability) for each connection.
-  // After the timer is triggered, a connection will be randomly selected to submit a share.
+  // After the timer is triggered, a connection will be randomly selected to
+  // submit a share.
   int sleepTime = 15000000 / connections_.size();
-  struct timeval interval{sleepTime / 1000000, sleepTime % 1000000};
+  struct timeval interval {
+    sleepTime / 1000000, sleepTime % 1000000
+  };
   event_add(timer_, &interval);
 
   // create signals
-  sigterm_ = event_new(base_, SIGTERM, EV_SIGNAL | EV_PERSIST, StratumClientWrapper::signalCallback, this);
+  sigterm_ = event_new(base_, SIGTERM, EV_SIGNAL | EV_PERSIST,
+                       StratumClientWrapper::signalCallback, this);
   event_add(sigterm_, nullptr);
-  sigint_ = event_new(base_, SIGINT, EV_SIGNAL | EV_PERSIST, StratumClientWrapper::signalCallback, this);
+  sigint_ = event_new(base_, SIGINT, EV_SIGNAL | EV_PERSIST,
+                      StratumClientWrapper::signalCallback, this);
   event_add(sigint_, nullptr);
 
   // event loop
@@ -334,14 +346,16 @@ void StratumClientWrapper::submitShares() {
   // randomly select a connection to submit a share.
   static std::random_device rd;
   static std::mt19937 gen(rd());
-  static std::uniform_int_distribution<size_t> dis(0, connections_.size()-1);
+  static std::uniform_int_distribution<size_t> dis(0, connections_.size() - 1);
 
   size_t i = dis(gen);
   connections_[i]->submitShare();
 }
 
-unique_ptr<StratumClient> StratumClientWrapper::createClient(struct event_base *base, const string &workerFullName, const string &workerPasswd)
-{
+unique_ptr<StratumClient> StratumClientWrapper::createClient(
+    struct event_base* base,
+    const string& workerFullName,
+    const string& workerPasswd) {
   auto iter = gStratumClientFactories.find(type_);
   if (iter != gStratumClientFactories.end() && iter->second) {
     return iter->second(base, workerFullName, workerPasswd);
@@ -363,7 +377,7 @@ TCPClientWrapper::~TCPClientWrapper() {
   close(sockfd_);
 }
 
-bool TCPClientWrapper::connect(const char *host, const int port) {
+bool TCPClientWrapper::connect(const char* host, const int port) {
   struct sockaddr_in sin;
   memset(&sin, 0, sizeof(sin));
 
@@ -371,7 +385,7 @@ bool TCPClientWrapper::connect(const char *host, const int port) {
   inet_pton(AF_INET, host, &(sin.sin_addr));
   sin.sin_port = htons(port);
 
-  if (::connect(sockfd_, (struct sockaddr *)&sin, sizeof(sin)) == 0) {
+  if (::connect(sockfd_, (struct sockaddr*)&sin, sizeof(sin)) == 0) {
     return true;
   }
 
@@ -379,16 +393,16 @@ bool TCPClientWrapper::connect(const char *host, const int port) {
   return false;
 }
 
-void TCPClientWrapper::send(const char *data, const size_t len) {
+void TCPClientWrapper::send(const char* data, const size_t len) {
   ::send(sockfd_, data, len, 0);
-//  DLOG(INFO) << "send: " << data;
+  //  DLOG(INFO) << "send: " << data;
 }
 
 void TCPClientWrapper::recv() {
   string buf;
   buf.resize(4096);  // we assume 4096 is big enough
 
-  ssize_t bytes = ::recv(sockfd_, (void *)buf.data(), buf.size(), 0);
+  ssize_t bytes = ::recv(sockfd_, (void*)buf.data(), buf.size(), 0);
   if (bytes == -1) {
     LOG(ERROR) << "recv fail: " << strerror(errno);
     return;
@@ -401,13 +415,13 @@ void TCPClientWrapper::recv() {
   // put data to evbuffer
   evbuffer_add(inBuf_, buf.data(), buf.size());
 
-//  DLOG(INFO) << "recv: " << buf;
+  //  DLOG(INFO) << "recv: " << buf;
 }
 
-void TCPClientWrapper::getLine(string &line) {
+void TCPClientWrapper::getLine(string& line) {
   line.clear();
   if (evbuffer_get_length(inBuf_) == 0)
-  	recv();
+    recv();
 
   // find eol
   struct evbuffer_ptr loc;
@@ -419,8 +433,7 @@ void TCPClientWrapper::getLine(string &line) {
   // copies and removes the first datlen bytes from the front of buf
   // into the memory at data
   line.resize(loc.pos + 1);  // containing "\n"
-  evbuffer_remove(inBuf_, (void *)line.data(), line.size());
+  evbuffer_remove(inBuf_, (void*)line.data(), line.size());
 
   LOG(INFO) << "line: " << line;
 }
-

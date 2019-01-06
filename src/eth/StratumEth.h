@@ -40,60 +40,55 @@
 // If there is no forward compatibility, one of the versions of Share
 // will be considered invalid, resulting in loss of users' hashrate.
 
+class ShareEthBytesVersion {
+ public:
+  uint32_t version_ = 0;   // 0
+  uint32_t checkSum_ = 0;  // 4
 
+  int64_t workerHashId_ = 0;  // 8
+  int32_t userId_ = 0;        // 16
+  int32_t status_ = 0;        // 20
+  int64_t timestamp_ = 0;     // 24
+  IpAddress ip_ = 0;          // 32
 
-class ShareEthBytesVersion
-{
-public:
-
-  uint32_t  version_      = 0;//0
-  uint32_t  checkSum_     = 0;//4
-
-  int64_t   workerHashId_ = 0;//8
-  int32_t   userId_       = 0;//16
-  int32_t   status_       = 0;//20
-  int64_t   timestamp_    = 0;//24
-  IpAddress ip_           = 0;//32
-
-  uint64_t headerHash_  = 0;//48
-  uint64_t shareDiff_   = 0;//56
-  uint64_t networkDiff_ = 0;//64
-  uint64_t nonce_       = 0;//72
-  uint32_t sessionId_   = 0;//80
-  uint32_t height_      = 0;//84
+  uint64_t headerHash_ = 0;   // 48
+  uint64_t shareDiff_ = 0;    // 56
+  uint64_t networkDiff_ = 0;  // 64
+  uint64_t nonce_ = 0;        // 72
+  uint32_t sessionId_ = 0;    // 80
+  uint32_t height_ = 0;       // 84
 
   uint32_t checkSum() const {
     uint64_t c = 0;
 
-    c += (uint64_t) version_;
-    c += (uint64_t) workerHashId_;
-    c += (uint64_t) userId_;
-    c += (uint64_t) status_;
-    c += (uint64_t) timestamp_;
-    c += (uint64_t) ip_.addrUint64[0];
-    c += (uint64_t) ip_.addrUint64[1];
-    c += (uint64_t) headerHash_;
-    c += (uint64_t) shareDiff_;
-    c += (uint64_t) networkDiff_;
-    c += (uint64_t) nonce_;
-    c += (uint64_t) sessionId_;
-    c += (uint64_t) height_;
+    c += (uint64_t)version_;
+    c += (uint64_t)workerHashId_;
+    c += (uint64_t)userId_;
+    c += (uint64_t)status_;
+    c += (uint64_t)timestamp_;
+    c += (uint64_t)ip_.addrUint64[0];
+    c += (uint64_t)ip_.addrUint64[1];
+    c += (uint64_t)headerHash_;
+    c += (uint64_t)shareDiff_;
+    c += (uint64_t)networkDiff_;
+    c += (uint64_t)nonce_;
+    c += (uint64_t)sessionId_;
+    c += (uint64_t)height_;
 
-    return ((uint32_t) c) + ((uint32_t) (c >> 32));
+    return ((uint32_t)c) + ((uint32_t)(c >> 32));
   }
-
 };
 
-
-class ShareEth : public sharebase::EthMsg
-{
-public:
-
-  const static uint32_t CURRENT_VERSION_FOUNDATION = 0x00110003u; // first 0011: ETH, second 0002: version 3
-  const static uint32_t CURRENT_VERSION_CLASSIC    = 0x00160003u; // first 0016: ETC, second 0002: version 3
-  const static uint32_t BYTES_VERSION_FOUNDATION = 0x00110002u; // first 0011: ETH, second 0002: version 3
-  const static uint32_t BYTES_VERSION_CLASSIC    = 0x00160002u; // first 0016: ETC, second 0002: version 3
-
+class ShareEth : public sharebase::EthMsg {
+ public:
+  const static uint32_t CURRENT_VERSION_FOUNDATION =
+      0x00110003u;  // first 0011: ETH, second 0002: version 3
+  const static uint32_t CURRENT_VERSION_CLASSIC =
+      0x00160003u;  // first 0016: ETC, second 0002: version 3
+  const static uint32_t BYTES_VERSION_FOUNDATION =
+      0x00110002u;  // first 0011: ETH, second 0002: version 3
+  const static uint32_t BYTES_VERSION_CLASSIC =
+      0x00160002u;  // first 0016: ETC, second 0002: version 3
 
   ShareEth() {
     set_version(0);
@@ -109,19 +104,19 @@ public:
     set_nonce(0);
     set_sessionid(0);
   }
-  ShareEth(const ShareEth &r) = default;
-  ShareEth &operator=(const ShareEth &r) = default;
+  ShareEth(const ShareEth& r) = default;
+  ShareEth& operator=(const ShareEth& r) = default;
 
   inline static EthConsensus::Chain getChain(uint32_t version) {
     switch (version) {
-    case CURRENT_VERSION_FOUNDATION:
-    case BYTES_VERSION_FOUNDATION:
-      return EthConsensus::Chain::FOUNDATION;
-    case CURRENT_VERSION_CLASSIC:
-    case BYTES_VERSION_CLASSIC:
-      return EthConsensus::Chain::CLASSIC;
-    default:
-      return EthConsensus::Chain::UNKNOWN;
+      case CURRENT_VERSION_FOUNDATION:
+      case BYTES_VERSION_FOUNDATION:
+        return EthConsensus::Chain::FOUNDATION;
+      case CURRENT_VERSION_CLASSIC:
+      case BYTES_VERSION_CLASSIC:
+        return EthConsensus::Chain::CLASSIC;
+      default:
+        return EthConsensus::Chain::UNKNOWN;
     }
   }
 
@@ -140,27 +135,24 @@ public:
     return 0;
   }
 
-  EthConsensus::Chain getChain() const {
+  EthConsensus::Chain getChain() const { return getChain(version()); }
 
-    return getChain(version());
-  }
-
-  double score() const
-  {
-
-    if (!StratumStatus::isAccepted(status()) || sharediff() == 0 || networkdiff() == 0) {
+  double score() const {
+    if (!StratumStatus::isAccepted(status()) || sharediff() == 0 ||
+        networkdiff() == 0) {
       return 0.0;
     }
 
     double result = 0.0;
 
-    // Network diff may less than share diff on testnet or regression test network.
+    // Network diff may less than share diff on testnet or regression test
+    // network.
     // On regression test network, the network diff may be zero.
-    // But no matter how low the network diff is, you can only dig one block at a time.
+    // But no matter how low the network diff is, you can only dig one block at
+    // a time.
     if (networkdiff() < sharediff()) {
       result = 1.0;
-    }
-    else {
+    } else {
       result = (double)sharediff() / (double)networkdiff();
     }
 
@@ -172,71 +164,70 @@ public:
     return result;
   }
 
-
-  bool isValid() const
-  {
-
-    if (version() != CURRENT_VERSION_FOUNDATION && version() != CURRENT_VERSION_CLASSIC) {
+  bool isValid() const {
+    if (version() != CURRENT_VERSION_FOUNDATION &&
+        version() != CURRENT_VERSION_CLASSIC) {
       return false;
     }
 
     if (userid() == 0 || workerhashid() == 0 || height() == 0 ||
-        networkdiff() == 0 || sharediff() == 0)
-    {
+        networkdiff() == 0 || sharediff() == 0) {
       return false;
     }
-    
+
     return true;
   }
 
-  string toString() const
-  {
-
-    return Strings::Format("share(height: %u, headerHash: %016" PRIx64 "..., ip: %s, userId: %d, "
-                           "workerId: %" PRId64 ", time: %u/%s, "
-                           "shareDiff: %" PRIu64 ", networkDiff: %" PRIu64 ", nonce: %016" PRIx64 ", "
-                           "sessionId: %08x, status: %d/%s)",
-                           height(), headerhash(), ip().c_str(), userid(),
-                           workerhashid(), timestamp(), date("%F %T", timestamp()).c_str(),
-                           sharediff(), networkdiff(), nonce(),
-                           sessionid(), status(), StratumStatus::toString(status()));
+  string toString() const {
+    return Strings::Format(
+        "share(height: %u, headerHash: %016" PRIx64
+        "..., ip: %s, userId: %d, "
+        "workerId: %" PRId64
+        ", time: %u/%s, "
+        "shareDiff: %" PRIu64 ", networkDiff: %" PRIu64 ", nonce: %016" PRIx64
+        ", "
+        "sessionId: %08x, status: %d/%s)",
+        height(), headerhash(), ip().c_str(), userid(), workerhashid(),
+        timestamp(), date("%F %T", timestamp()).c_str(), sharediff(),
+        networkdiff(), nonce(), sessionid(), status(),
+        StratumStatus::toString(status()));
   }
 
-
-  bool SerializeToBuffer(string& data, uint32_t& size) const{
+  bool SerializeToBuffer(string& data, uint32_t& size) const {
     size = ByteSize();
     data.resize(size);
 
-    if (!SerializeToArray((uint8_t *)data.data(), size)) {
-        DLOG(INFO) << "base.SerializeToArray failed!" << std::endl;
-        return false;
-      }
+    if (!SerializeToArray((uint8_t*)data.data(), size)) {
+      DLOG(INFO) << "base.SerializeToArray failed!" << std::endl;
+      return false;
+    }
 
     return true;
   }
 
-
-  bool UnserializeWithVersion(const uint8_t* data, uint32_t size){
-
-    if(nullptr == data || size <= 0) {
+  bool UnserializeWithVersion(const uint8_t* data, uint32_t size) {
+    if (nullptr == data || size <= 0) {
       return false;
     }
 
-    const uint8_t * payload = data;
+    const uint8_t* payload = data;
     uint32_t version = *((uint32_t*)payload);
 
-    if (version == CURRENT_VERSION_FOUNDATION || version == CURRENT_VERSION_CLASSIC) {
-
-      if (!ParseFromArray((const uint8_t *)(payload + sizeof(uint32_t)), size - sizeof(uint32_t))) {
+    if (version == CURRENT_VERSION_FOUNDATION ||
+        version == CURRENT_VERSION_CLASSIC) {
+      if (!ParseFromArray((const uint8_t*)(payload + sizeof(uint32_t)),
+                          size - sizeof(uint32_t))) {
         DLOG(INFO) << "share ParseFromArray failed!";
         return false;
       }
-    } else if ((version == BYTES_VERSION_FOUNDATION || version == BYTES_VERSION_CLASSIC) && size == sizeof(ShareEthBytesVersion)) {
-
-      ShareEthBytesVersion* share = (ShareEthBytesVersion*) payload;
+    } else if ((version == BYTES_VERSION_FOUNDATION ||
+                version == BYTES_VERSION_CLASSIC) &&
+               size == sizeof(ShareEthBytesVersion)) {
+      ShareEthBytesVersion* share = (ShareEthBytesVersion*)payload;
 
       if (share->checkSum() != share->checkSum_) {
-        DLOG(INFO) << "checkSum mismatched! checkSum_: " << share->checkSum_<< ", checkSum(): " << share->checkSum();
+        DLOG(INFO) << "checkSum mismatched! checkSum_: " << share->checkSum_
+                   << ", checkSum(): " << share->checkSum();
         return false;
       }
 
@@ -254,7 +245,6 @@ public:
       set_height(share->height_);
 
     } else {
-
       DLOG(INFO) << "unknow share received! data size: " << size;
       return false;
     }
@@ -262,16 +252,15 @@ public:
     return true;
   }
 
-
   bool SerializeToArrayWithLength(string& data, uint32_t& size) const {
     size = ByteSize();
     data.resize(size + sizeof(uint32_t));
 
     *((uint32_t*)data.data()) = size;
-    uint8_t * payload = (uint8_t *)data.data();
+    uint8_t* payload = (uint8_t*)data.data();
 
     if (!SerializeToArray(payload + sizeof(uint32_t), size)) {
-       DLOG(INFO) << "base.SerializeToArray failed!";
+      DLOG(INFO) << "base.SerializeToArray failed!";
       return false;
     }
 
@@ -283,7 +272,7 @@ public:
     size = ByteSize();
     data.resize(size + sizeof(uint32_t));
 
-    uint8_t * payload = (uint8_t *)data.data();
+    uint8_t* payload = (uint8_t*)data.data();
     *((uint32_t*)payload) = version();
 
     if (!SerializeToArray(payload + sizeof(uint32_t), size)) {
@@ -295,20 +284,17 @@ public:
     return true;
   }
 
-  size_t getsharelength() {
-    return IsInitialized() ? ByteSize() : 0;
-  }
+  size_t getsharelength() { return IsInitialized() ? ByteSize() : 0; }
 };
 
-
-
-class StratumJobEth : public StratumJob
-{
-public:
+class StratumJobEth : public StratumJob {
+ public:
   StratumJobEth();
   string serializeToJson() const override;
-  bool unserializeFromJson(const char *s, size_t len) override;
-  bool initFromGw(const RskWorkEth &latestRskBlockJson, EthConsensus::Chain chain, uint8_t serverId);
+  bool unserializeFromJson(const char* s, size_t len) override;
+  bool initFromGw(const RskWorkEth& latestRskBlockJson,
+                  EthConsensus::Chain chain,
+                  uint8_t serverId);
 
   EthConsensus::Chain chain_ = EthConsensus::Chain::UNKNOWN;
   uint32_t height_ = 0;
@@ -338,17 +324,18 @@ struct StratumTraitsEth {
     uint64_t currentJobDiff_;
     std::set<uint64_t> jobDiffs_;
 
-    JobDiffType &operator=(uint64_t diff) {
+    JobDiffType& operator=(uint64_t diff) {
       jobDiffs_.insert(diff);
       currentJobDiff_ = diff;
       return *this;
     }
   };
   struct LocalJobType : public LocalJob {
-    LocalJobType(uint64_t jobId, const std::string &headerHash)
-        : LocalJob(jobId), headerHash_(headerHash) {
+    LocalJobType(uint64_t jobId, const std::string& headerHash)
+        : LocalJob(jobId), headerHash_(headerHash) {}
+    bool operator==(const std::string& headerHash) const {
+      return headerHash_ == headerHash;
     }
-    bool operator==(const std::string &headerHash) const { return headerHash_ == headerHash; }
 
     std::string headerHash_;
   };
@@ -362,13 +349,13 @@ enum class StratumProtocolEth {
 };
 
 inline const char* getProtocolString(StratumProtocolEth protocol) {
-  switch(protocol) {
-  case StratumProtocolEth::ETHPROXY:
-    return "ETHPROXY";
-  case StratumProtocolEth::STRATUM:
-    return "STRATUM";
-  case StratumProtocolEth::NICEHASH_STRATUM:
-    return "NICEHASH_STRATUM";
+  switch (protocol) {
+    case StratumProtocolEth::ETHPROXY:
+      return "ETHPROXY";
+    case StratumProtocolEth::STRATUM:
+      return "STRATUM";
+    case StratumProtocolEth::NICEHASH_STRATUM:
+      return "NICEHASH_STRATUM";
   }
   // should not be here
   return "UNKNOWN";

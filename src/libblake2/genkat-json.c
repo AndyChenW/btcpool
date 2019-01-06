@@ -25,102 +25,102 @@
 
 #define LENGTH 256
 
-#define MAKE_KAT(name, size_prefix, first)                                                         \
-  do {                                                                                             \
-    for (i = 0; i < LENGTH; ++i) {                                                                 \
-      printf("%s\n{\n", i == 0 && first ? "" : ",");                                               \
-                                                                                                   \
-      printf("    \"hash\": \"" #name "\",\n");                                                    \
-      printf("    \"in\": \"");                                                                    \
-      for (j = 0; j < i; ++j)                                                                      \
-        printf("%02x", in[j]);                                                                     \
-                                                                                                   \
-      printf("\",\n");                                                                             \
-      printf("    \"key\": \"\",\n");                                                              \
-      printf("    \"out\": \"");                                                                   \
-                                                                                                   \
-      name(hash, size_prefix##_OUTBYTES, in, i, NULL, 0);                                          \
-                                                                                                   \
-      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                                                 \
-        printf("%02x", hash[j]);                                                                   \
-      printf("\"\n");                                                                              \
-      printf("}");                                                                                 \
-    }                                                                                              \
+#define MAKE_KAT(name, size_prefix, first)                \
+  do {                                                    \
+    for (i = 0; i < LENGTH; ++i) {                        \
+      printf("%s\n{\n", i == 0 && first ? "" : ",");      \
+                                                          \
+      printf("    \"hash\": \"" #name "\",\n");           \
+      printf("    \"in\": \"");                           \
+      for (j = 0; j < i; ++j)                             \
+        printf("%02x", in[j]);                            \
+                                                          \
+      printf("\",\n");                                    \
+      printf("    \"key\": \"\",\n");                     \
+      printf("    \"out\": \"");                          \
+                                                          \
+      name(hash, size_prefix##_OUTBYTES, in, i, NULL, 0); \
+                                                          \
+      for (j = 0; j < size_prefix##_OUTBYTES; ++j)        \
+        printf("%02x", hash[j]);                          \
+      printf("\"\n");                                     \
+      printf("}");                                        \
+    }                                                     \
   } while (0)
 
-#define MAKE_KEYED_KAT(name, size_prefix, first)                                                   \
-  do {                                                                                             \
-    for (i = 0; i < LENGTH; ++i) {                                                                 \
-      printf("%s\n{\n", i == 0 && first ? "" : ",");                                               \
-                                                                                                   \
-      printf("    \"hash\": \"" #name "\",\n");                                                    \
-      printf("    \"in\": \"");                                                                    \
-      for (j = 0; j < i; ++j)                                                                      \
-        printf("%02x", in[j]);                                                                     \
-                                                                                                   \
-      printf("\",\n");                                                                             \
-      printf("    \"key\": \"");                                                                   \
-      for (j = 0; j < size_prefix##_KEYBYTES; ++j)                                                 \
-        printf("%02x", key[j]);                                                                    \
-      printf("\",\n");                                                                             \
-      printf("    \"out\": \"");                                                                   \
-                                                                                                   \
-      name(hash, size_prefix##_OUTBYTES, in, i, key, size_prefix##_KEYBYTES);                      \
-                                                                                                   \
-      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                                                 \
-        printf("%02x", hash[j]);                                                                   \
-      printf("\"\n");                                                                              \
-      printf("}");                                                                                 \
-    }                                                                                              \
+#define MAKE_KEYED_KAT(name, size_prefix, first)                              \
+  do {                                                                        \
+    for (i = 0; i < LENGTH; ++i) {                                            \
+      printf("%s\n{\n", i == 0 && first ? "" : ",");                          \
+                                                                              \
+      printf("    \"hash\": \"" #name "\",\n");                               \
+      printf("    \"in\": \"");                                               \
+      for (j = 0; j < i; ++j)                                                 \
+        printf("%02x", in[j]);                                                \
+                                                                              \
+      printf("\",\n");                                                        \
+      printf("    \"key\": \"");                                              \
+      for (j = 0; j < size_prefix##_KEYBYTES; ++j)                            \
+        printf("%02x", key[j]);                                               \
+      printf("\",\n");                                                        \
+      printf("    \"out\": \"");                                              \
+                                                                              \
+      name(hash, size_prefix##_OUTBYTES, in, i, key, size_prefix##_KEYBYTES); \
+                                                                              \
+      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                            \
+        printf("%02x", hash[j]);                                              \
+      printf("\"\n");                                                         \
+      printf("}");                                                            \
+    }                                                                         \
   } while (0)
 
-#define MAKE_XOF_KAT(name, first)                                                                  \
-  do {                                                                                             \
-    for (i = 1; i <= LENGTH; ++i) {                                                                \
-      printf("%s\n{\n", i == 1 && first ? "" : ",");                                               \
-                                                                                                   \
-      printf("    \"hash\": \"" #name "\",\n");                                                    \
-      printf("    \"in\": \"");                                                                    \
-      for (j = 0; j < LENGTH; ++j)                                                                 \
-        printf("%02x", in[j]);                                                                     \
-                                                                                                   \
-      printf("\",\n");                                                                             \
-      printf("    \"key\": \"\",\n");                                                              \
-      printf("    \"out\": \"");                                                                   \
-                                                                                                   \
-      name(hash, i, in, LENGTH, NULL, 0);                                                          \
-                                                                                                   \
-      for (j = 0; j < i; ++j)                                                                      \
-        printf("%02x", hash[j]);                                                                   \
-      printf("\"\n");                                                                              \
-      printf("}");                                                                                 \
-    }                                                                                              \
+#define MAKE_XOF_KAT(name, first)                    \
+  do {                                               \
+    for (i = 1; i <= LENGTH; ++i) {                  \
+      printf("%s\n{\n", i == 1 && first ? "" : ","); \
+                                                     \
+      printf("    \"hash\": \"" #name "\",\n");      \
+      printf("    \"in\": \"");                      \
+      for (j = 0; j < LENGTH; ++j)                   \
+        printf("%02x", in[j]);                       \
+                                                     \
+      printf("\",\n");                               \
+      printf("    \"key\": \"\",\n");                \
+      printf("    \"out\": \"");                     \
+                                                     \
+      name(hash, i, in, LENGTH, NULL, 0);            \
+                                                     \
+      for (j = 0; j < i; ++j)                        \
+        printf("%02x", hash[j]);                     \
+      printf("\"\n");                                \
+      printf("}");                                   \
+    }                                                \
   } while (0)
 
-#define MAKE_XOF_KEYED_KAT(name, size_prefix, first)                                               \
-  do {                                                                                             \
-    for (i = 1; i <= LENGTH; ++i) {                                                                \
-      printf("%s\n{\n", i == 1 && first ? "" : ",");                                               \
-                                                                                                   \
-      printf("    \"hash\": \"" #name "\",\n");                                                    \
-      printf("    \"in\": \"");                                                                    \
-      for (j = 0; j < LENGTH; ++j)                                                                 \
-        printf("%02x", in[j]);                                                                     \
-                                                                                                   \
-      printf("\",\n");                                                                             \
-      printf("    \"key\": \"");                                                                   \
-      for (j = 0; j < size_prefix##_KEYBYTES; ++j)                                                 \
-        printf("%02x", key[j]);                                                                    \
-      printf("\",\n");                                                                             \
-      printf("    \"out\": \"");                                                                   \
-                                                                                                   \
-      name(hash, i, in, LENGTH, key, size_prefix##_KEYBYTES);                                      \
-                                                                                                   \
-      for (j = 0; j < i; ++j)                                                                      \
-        printf("%02x", hash[j]);                                                                   \
-      printf("\"\n");                                                                              \
-      printf("}");                                                                                 \
-    }                                                                                              \
+#define MAKE_XOF_KEYED_KAT(name, size_prefix, first)          \
+  do {                                                        \
+    for (i = 1; i <= LENGTH; ++i) {                           \
+      printf("%s\n{\n", i == 1 && first ? "" : ",");          \
+                                                              \
+      printf("    \"hash\": \"" #name "\",\n");               \
+      printf("    \"in\": \"");                               \
+      for (j = 0; j < LENGTH; ++j)                            \
+        printf("%02x", in[j]);                                \
+                                                              \
+      printf("\",\n");                                        \
+      printf("    \"key\": \"");                              \
+      for (j = 0; j < size_prefix##_KEYBYTES; ++j)            \
+        printf("%02x", key[j]);                               \
+      printf("\",\n");                                        \
+      printf("    \"out\": \"");                              \
+                                                              \
+      name(hash, i, in, LENGTH, key, size_prefix##_KEYBYTES); \
+                                                              \
+      for (j = 0; j < i; ++j)                                 \
+        printf("%02x", hash[j]);                              \
+      printf("\"\n");                                         \
+      printf("}");                                            \
+    }                                                         \
   } while (0)
 
 int main() {

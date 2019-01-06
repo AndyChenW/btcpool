@@ -29,31 +29,34 @@
 
 class JobRepositorySia;
 
-class ServerSia : public ServerBase<JobRepositorySia>
-{
-public:
+class ServerSia : public ServerBase<JobRepositorySia> {
+ public:
   ServerSia(const int32_t shareAvgSeconds) : ServerBase(shareAvgSeconds) {}
   virtual ~ServerSia();
 
+  unique_ptr<StratumSession> createConnection(
+      struct bufferevent* bev,
+      struct sockaddr* saddr,
+      const uint32_t sessionID) override;
 
-  unique_ptr<StratumSession> createConnection(struct bufferevent *bev, struct sockaddr *saddr, const uint32_t sessionID) override;
-  
-  void sendSolvedShare2Kafka(uint8_t *buf, int len);
-private:
-  JobRepository* createJobRepository(const char *kafkaBrokers,
-                                     const char *consumerTopic,     
-                                     const string &fileLastNotifyTime) override;
+  void sendSolvedShare2Kafka(uint8_t* buf, int len);
 
+ private:
+  JobRepository* createJobRepository(const char* kafkaBrokers,
+                                     const char* consumerTopic,
+                                     const string& fileLastNotifyTime) override;
 };
 
-class JobRepositorySia : public JobRepositoryBase<ServerSia>
-{
-public:
-  JobRepositorySia(const char *kafkaBrokers, const char *consumerTopic, const string &fileLastNotifyTime, ServerSia *server);
+class JobRepositorySia : public JobRepositoryBase<ServerSia> {
+ public:
+  JobRepositorySia(const char* kafkaBrokers,
+                   const char* consumerTopic,
+                   const string& fileLastNotifyTime,
+                   ServerSia* server);
   ~JobRepositorySia();
-  StratumJob *createStratumJob() override {return new StratumJobSia();}
-  StratumJobEx* createStratumJobEx(StratumJob *sjob, bool isClean) override;
-  void broadcastStratumJob(StratumJob *sjob) override;
+  StratumJob* createStratumJob() override { return new StratumJobSia(); }
+  StratumJobEx* createStratumJobEx(StratumJob* sjob, bool isClean) override;
+  void broadcastStratumJob(StratumJob* sjob) override;
 };
 
 #endif

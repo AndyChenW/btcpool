@@ -27,18 +27,17 @@
 #include "JobMaker.h"
 #include "utilities_js.hpp"
 
-class JobMakerHandlerBytom : public GwJobMakerHandler
-{
-public:
+class JobMakerHandlerBytom : public GwJobMakerHandler {
+ public:
   virtual ~JobMakerHandlerBytom() {}
-  bool processMsg(const string &msg) override;
+  bool processMsg(const string& msg) override;
   string makeStratumJobMsg() override;
 
-protected:
+ protected:
   string header_;
   uint32_t time_;
   string seed_;
-  bool validate(JsonNode &j);
+  bool validate(JsonNode& j);
 };
 
 #endif

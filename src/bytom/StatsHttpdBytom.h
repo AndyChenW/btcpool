@@ -30,4 +30,4 @@
 ////////////////////////////  Alias  ////////////////////////////
 using StatsServerBytom = StatsServerT<ShareBytom>;
 
-#endif // STATSHTTPD_BYTOM_H_
+#endif  // STATSHTTPD_BYTOM_H_

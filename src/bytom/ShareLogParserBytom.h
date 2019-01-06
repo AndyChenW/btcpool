@@ -24,7 +24,6 @@
 #ifndef SHARELOGPARSER_BYTOM_H_
 #define SHARELOGPARSER_BYTOM_H_
 
-
 #include "ShareLogParser.h"
 
 #include "StratumBytom.h"
@@ -34,4 +33,4 @@ using ShareLogDumperBytom = ShareLogDumperT<ShareBytom>;
 using ShareLogParserBytom = ShareLogParserT<ShareBytom>;
 using ShareLogParserServerBytom = ShareLogParserServerT<ShareBytom>;
 
-#endif // SHARELOGPARSER_H_
+#endif  // SHARELOGPARSER_H_

@@ -29,10 +29,9 @@
 #include "GwMaker.h"
 #include "utilities_js.hpp"
 
-class GwMakerHandlerBytom : public GwMakerHandlerJson
-{
-  bool checkFields(JsonNode &r) override;
-  string constructRawMsg(JsonNode &r) override;
+class GwMakerHandlerBytom : public GwMakerHandlerJson {
+  bool checkFields(JsonNode& r) override;
+  string constructRawMsg(JsonNode& r) override;
   string getRequestData() override { return "{}"; }
 };
 

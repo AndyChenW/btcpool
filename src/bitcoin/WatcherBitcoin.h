@@ -27,54 +27,60 @@
 #include "Watcher.h"
 #include "StratumBitcoin.h"
 
-
 ///////////////////////////////// ClientContainer //////////////////////////////
-class ClientContainerBitcoin : public ClientContainer
-{
+class ClientContainerBitcoin : public ClientContainer {
   boost::shared_mutex stratumJobMutex_;
-  StratumJobBitcoin *poolStratumJob_; // the last stratum job from the pool itself
-protected:
+  StratumJobBitcoin*
+      poolStratumJob_;  // the last stratum job from the pool itself
+ protected:
   void consumeStratumJobInternal(const string& str) override;
   string createOnConnectedReplyString() const override;
-  PoolWatchClient* createPoolWatchClient( 
-                struct event_base *base, 
-                const string &poolName, const string &poolHost,
-                const int16_t poolPort, const string &workerName) override;
+  PoolWatchClient* createPoolWatchClient(struct event_base* base,
+                                         const string& poolName,
+                                         const string& poolHost,
+                                         const int16_t poolPort,
+                                         const string& workerName) override;
 
-public:
-  ClientContainerBitcoin(const string &kafkaBrokers, const string &jobTopic, const string &gbtTopic,
+ public:
+  ClientContainerBitcoin(const string& kafkaBrokers,
+                         const string& jobTopic,
+                         const string& gbtTopic,
                          bool disableChecking);
   ~ClientContainerBitcoin();
 
-  bool sendEmptyGBT(const string &poolName,
-                    int32_t blockHeight, uint32_t nBits,
-                    const string &blockPrevHash,
-                    uint32_t blockTime, uint32_t blockVersion);
+  bool sendEmptyGBT(const string& poolName,
+                    int32_t blockHeight,
+                    uint32_t nBits,
+                    const string& blockPrevHash,
+                    uint32_t blockTime,
+                    uint32_t blockVersion);
 
-  const StratumJobBitcoin * getPoolStratumJob();
+  const StratumJobBitcoin* getPoolStratumJob();
   boost::shared_lock<boost::shared_mutex> getPoolStratumJobReadLock();
 };
 
-
 ///////////////////////////////// PoolWatchClient //////////////////////////////
-class PoolWatchClientBitcoin : public PoolWatchClient
-{
+class PoolWatchClientBitcoin : public PoolWatchClient {
   uint32_t extraNonce1_;
   uint32_t extraNonce2Size_;
 
   string lastPrevBlockHash_;
 
-  void handleStratumMessage(const string &line) override;
+  void handleStratumMessage(const string& line) override;
 
-public:
-  PoolWatchClientBitcoin(struct event_base *base, ClientContainerBitcoin *container,
-                  bool disableChecking,
-                  const string &poolName,
-                  const string &poolHost, const int16_t poolPort,
-                  const string &workerName);
+ public:
+  PoolWatchClientBitcoin(struct event_base* base,
+                         ClientContainerBitcoin* container,
+                         bool disableChecking,
+                         const string& poolName,
+                         const string& poolHost,
+                         const int16_t poolPort,
+                         const string& workerName);
   ~PoolWatchClientBitcoin();
 
-  ClientContainerBitcoin* GetContainerBitcoin(){ return static_cast<ClientContainerBitcoin*>(container_); }
+  ClientContainerBitcoin* GetContainerBitcoin() {
+    return static_cast<ClientContainerBitcoin*>(container_);
+  }
 };
 
 #endif

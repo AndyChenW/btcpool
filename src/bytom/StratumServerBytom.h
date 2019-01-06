@@ -29,30 +29,37 @@
 
 class JobRepositoryBytom;
 
-class ServerBytom : public ServerBase<JobRepositoryBytom>
-{
-public:
+class ServerBytom : public ServerBase<JobRepositoryBytom> {
+ public:
   ServerBytom(const int32_t shareAvgSeconds) : ServerBase(shareAvgSeconds) {}
 
-  JobRepository* createJobRepository(const char *kafkaBrokers,
-                                     const char *consumerTopic,     
-                                     const string &fileLastNotifyTime) override;
+  JobRepository* createJobRepository(const char* kafkaBrokers,
+                                     const char* consumerTopic,
+                                     const string& fileLastNotifyTime) override;
 
-  unique_ptr<StratumSession> createConnection(struct bufferevent *bev, struct sockaddr *saddr, const uint32_t sessionID) override;
-  void sendSolvedShare2Kafka(uint64_t nonce, const string &strHeader,
-                                      uint64_t height, uint64_t networkDiff, const StratumWorker &worker);
+  unique_ptr<StratumSession> createConnection(
+      struct bufferevent* bev,
+      struct sockaddr* saddr,
+      const uint32_t sessionID) override;
+  void sendSolvedShare2Kafka(uint64_t nonce,
+                             const string& strHeader,
+                             uint64_t height,
+                             uint64_t networkDiff,
+                             const StratumWorker& worker);
 };
 
-class JobRepositoryBytom : public JobRepositoryBase<ServerBytom>
-{
-private:
+class JobRepositoryBytom : public JobRepositoryBase<ServerBytom> {
+ private:
   string latestPreviousBlockHash_;
 
-public:
-  JobRepositoryBytom(const char *kafkaBrokers, const char *consumerTopic, const string &fileLastNotifyTime, ServerBytom *server);
-  StratumJob* createStratumJob() override {return new StratumJobBytom();}
-  StratumJobEx* createStratumJobEx(StratumJob *sjob, bool isClean) override;
-  void broadcastStratumJob(StratumJob *sjob) override;
+ public:
+  JobRepositoryBytom(const char* kafkaBrokers,
+                     const char* consumerTopic,
+                     const string& fileLastNotifyTime,
+                     ServerBytom* server);
+  StratumJob* createStratumJob() override { return new StratumJobBytom(); }
+  StratumJobEx* createStratumJobEx(StratumJob* sjob, bool isClean) override;
+  void broadcastStratumJob(StratumJob* sjob) override;
 };
 
 #endif  // STRATUM_SERVER_BYTOM_H_

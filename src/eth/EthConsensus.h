@@ -29,39 +29,42 @@
 
 // The consensus rules of Ethereum and Ethereum Classic
 class EthConsensus {
-public:
-    // Chain names is references to Parity's (an Ethereum node) configuration.
-    // https://paritytech.github.io/parity-config-generator/
-    enum class Chain {
-        CLASSIC,    // Ethereum Classic Main Network
-        FOUNDATION, // Ethereum Main Network
-        UNKNOWN     // Unknown / other chains
-    };
+ public:
+  // Chain names is references to Parity's (an Ethereum node) configuration.
+  // https://paritytech.github.io/parity-config-generator/
+  enum class Chain {
+    CLASSIC,     // Ethereum Classic Main Network
+    FOUNDATION,  // Ethereum Main Network
+    UNKNOWN      // Unknown / other chains
+  };
 
-    static Chain getChain(std::string chainStr);
-    static std::string getChainStr(const Chain chain);
+  static Chain getChain(std::string chainStr);
+  static std::string getChainStr(const Chain chain);
 
-    // The "static" block reward for the winning block.
-    // Uncle block rewards are not included.
-    static int64_t getStaticBlockReward(int nHeight, Chain chain);
+  // The "static" block reward for the winning block.
+  // Uncle block rewards are not included.
+  static int64_t getStaticBlockReward(int nHeight, Chain chain);
 
-    inline static int64_t getStaticBlockReward(int nHeight, const std::string &chainStr) {
-        return getStaticBlockReward(nHeight, getChain(chainStr));
-    }
+  inline static int64_t getStaticBlockReward(int nHeight,
+                                             const std::string& chainStr) {
+    return getStaticBlockReward(nHeight, getChain(chainStr));
+  }
 
-    // Get the ratio of the uncle block's reward and the main chain block's reward.
-    // Example: the block reward of FOUNDATION uncle block is 7/8 of a mainchain block's,
-    // the 0.875 will be returned.
-    static double getUncleBlockRewardRatio(int nHeight, Chain chain);
+  // Get the ratio of the uncle block's reward and the main chain block's
+  // reward.
+  // Example: the block reward of FOUNDATION uncle block is 7/8 of a mainchain
+  // block's,
+  // the 0.875 will be returned.
+  static double getUncleBlockRewardRatio(int nHeight, Chain chain);
 
-protected:
-    // static block rewards of Ethereum Classic Main Network
-    static int64_t getStaticBlockRewardClassic(int nHeight);
-    // static block rewards of Ethereum Main Network
-    static int64_t getStaticBlockRewardFoundation(int nHeight);
+ protected:
+  // static block rewards of Ethereum Classic Main Network
+  static int64_t getStaticBlockRewardClassic(int nHeight);
+  // static block rewards of Ethereum Main Network
+  static int64_t getStaticBlockRewardFoundation(int nHeight);
 
-    static double getUncleBlockRewardRatioClassic(int nHeight);
-    static double getUncleBlockRewardRatioFoundation(int nHeight);
+  static double getUncleBlockRewardRatioClassic(int nHeight);
+  static double getUncleBlockRewardRatioFoundation(int nHeight);
 };
 
-#endif // ETH_CONSENSUS_H_
+#endif  // ETH_CONSENSUS_H_

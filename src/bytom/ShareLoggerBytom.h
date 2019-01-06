@@ -31,4 +31,4 @@
 //////////////////////////////  Alias  ///////////////////////////////
 using ShareLogWriterBytom = ShareLogWriterT<ShareBytom>;
 
-#endif // SHARELOGGER_ETH_H_
+#endif  // SHARELOGGER_ETH_H_

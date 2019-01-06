@@ -25,85 +25,97 @@
 
 #define LENGTH 256
 
-#define MAKE_KAT(name, size_prefix)                                                                \
-  do {                                                                                             \
-    printf("static const uint8_t " #name "_kat[BLAKE2_KAT_LENGTH][" #size_prefix                   \
-           "_OUTBYTES] = \n{\n");                                                                  \
-                                                                                                   \
-    for (i = 0; i < LENGTH; ++i) {                                                                 \
-      name(hash, size_prefix##_OUTBYTES, in, i, NULL, 0);                                          \
-      printf("\t{\n\t\t");                                                                         \
-                                                                                                   \
-      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                                                 \
-        printf("0x%02X%s", hash[j],                                                                \
-               (j + 1) == size_prefix##_OUTBYTES ? "\n" : j && !((j + 1) % 8) ? ",\n\t\t" : ", "); \
-                                                                                                   \
-      printf("\t},\n");                                                                            \
-    }                                                                                              \
-                                                                                                   \
-    printf("};\n\n\n\n\n");                                                                        \
+#define MAKE_KAT(name, size_prefix)                                       \
+  do {                                                                    \
+    printf("static const uint8_t " #name                                  \
+           "_kat[BLAKE2_KAT_LENGTH][" #size_prefix "_OUTBYTES] = \n{\n"); \
+                                                                          \
+    for (i = 0; i < LENGTH; ++i) {                                        \
+      name(hash, size_prefix##_OUTBYTES, in, i, NULL, 0);                 \
+      printf("\t{\n\t\t");                                                \
+                                                                          \
+      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                        \
+        printf("0x%02X%s", hash[j],                                       \
+               (j + 1) == size_prefix##_OUTBYTES                          \
+                   ? "\n"                                                 \
+                   : j && !((j + 1) % 8) ? ",\n\t\t" : ", ");             \
+                                                                          \
+      printf("\t},\n");                                                   \
+    }                                                                     \
+                                                                          \
+    printf("};\n\n\n\n\n");                                               \
   } while (0)
 
-#define MAKE_KEYED_KAT(name, size_prefix)                                                          \
-  do {                                                                                             \
-    printf("static const uint8_t " #name "_keyed_kat[BLAKE2_KAT_LENGTH][" #size_prefix             \
-           "_OUTBYTES] = \n{\n");                                                                  \
-                                                                                                   \
-    for (i = 0; i < LENGTH; ++i) {                                                                 \
-      name(hash, size_prefix##_OUTBYTES, in, i, key, size_prefix##_KEYBYTES);                      \
-      printf("\t{\n\t\t");                                                                         \
-                                                                                                   \
-      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                                                 \
-        printf("0x%02X%s", hash[j],                                                                \
-               (j + 1) == size_prefix##_OUTBYTES ? "\n" : j && !((j + 1) % 8) ? ",\n\t\t" : ", "); \
-                                                                                                   \
-      printf("\t},\n");                                                                            \
-    }                                                                                              \
-                                                                                                   \
-    printf("};\n\n\n\n\n");                                                                        \
+#define MAKE_KEYED_KAT(name, size_prefix)                                     \
+  do {                                                                        \
+    printf("static const uint8_t " #name                                      \
+           "_keyed_kat[BLAKE2_KAT_LENGTH][" #size_prefix                      \
+           "_OUTBYTES] = \n{\n");                                             \
+                                                                              \
+    for (i = 0; i < LENGTH; ++i) {                                            \
+      name(hash, size_prefix##_OUTBYTES, in, i, key, size_prefix##_KEYBYTES); \
+      printf("\t{\n\t\t");                                                    \
+                                                                              \
+      for (j = 0; j < size_prefix##_OUTBYTES; ++j)                            \
+        printf("0x%02X%s", hash[j],                                           \
+               (j + 1) == size_prefix##_OUTBYTES                              \
+                   ? "\n"                                                     \
+                   : j && !((j + 1) % 8) ? ",\n\t\t" : ", ");                 \
+                                                                              \
+      printf("\t},\n");                                                       \
+    }                                                                         \
+                                                                              \
+    printf("};\n\n\n\n\n");                                                   \
   } while (0)
 
-#define MAKE_XOF_KAT(name)                                                                         \
-  do {                                                                                             \
-    printf("static const uint8_t " #name "_kat[BLAKE2_KAT_LENGTH][BLAKE2_KAT_LENGTH] = \n{\n");    \
-                                                                                                   \
-    for (i = 1; i <= LENGTH; ++i) {                                                                \
-      name(hash, i, in, LENGTH, NULL, 0);                                                          \
-      printf("\t{\n\t\t");                                                                         \
-                                                                                                   \
-      for (j = 0; j < i; ++j)                                                                      \
-        printf("0x%02X%s", hash[j],                                                                \
-               (j + 1) == LENGTH ? "\n" : j && !((j + 1) % 8) ? ",\n\t\t" : ", ");                 \
-                                                                                                   \
-      for (j = i; j < LENGTH; ++j)                                                                 \
-        printf("0x00%s", (j + 1) == LENGTH ? "\n" : j && !((j + 1) % 8) ? ",\n\t\t" : ", ");       \
-                                                                                                   \
-      printf("\t},\n");                                                                            \
-    }                                                                                              \
-                                                                                                   \
-    printf("};\n\n\n\n\n");                                                                        \
+#define MAKE_XOF_KAT(name)                                                  \
+  do {                                                                      \
+    printf("static const uint8_t " #name                                    \
+           "_kat[BLAKE2_KAT_LENGTH][BLAKE2_KAT_LENGTH] = \n{\n");           \
+                                                                            \
+    for (i = 1; i <= LENGTH; ++i) {                                         \
+      name(hash, i, in, LENGTH, NULL, 0);                                   \
+      printf("\t{\n\t\t");                                                  \
+                                                                            \
+      for (j = 0; j < i; ++j)                                               \
+        printf("0x%02X%s", hash[j],                                         \
+               (j + 1) == LENGTH ? "\n"                                     \
+                                 : j && !((j + 1) % 8) ? ",\n\t\t" : ", "); \
+                                                                            \
+      for (j = i; j < LENGTH; ++j)                                          \
+        printf("0x00%s",                                                    \
+               (j + 1) == LENGTH ? "\n"                                     \
+                                 : j && !((j + 1) % 8) ? ",\n\t\t" : ", "); \
+                                                                            \
+      printf("\t},\n");                                                     \
+    }                                                                       \
+                                                                            \
+    printf("};\n\n\n\n\n");                                                 \
   } while (0)
 
-#define MAKE_XOF_KEYED_KAT(name, size_prefix)                                                      \
-  do {                                                                                             \
-    printf("static const uint8_t " #name                                                           \
-           "_keyed_kat[BLAKE2_KAT_LENGTH][BLAKE2_KAT_LENGTH] = \n{\n");                            \
-                                                                                                   \
-    for (i = 1; i <= LENGTH; ++i) {                                                                \
-      name(hash, i, in, LENGTH, key, size_prefix##_KEYBYTES);                                      \
-      printf("\t{\n\t\t");                                                                         \
-                                                                                                   \
-      for (j = 0; j < i; ++j)                                                                      \
-        printf("0x%02X%s", hash[j],                                                                \
-               (j + 1) == LENGTH ? "\n" : j && !((j + 1) % 8) ? ",\n\t\t" : ", ");                 \
-                                                                                                   \
-      for (j = i; j < LENGTH; ++j)                                                                 \
-        printf("0x00%s", (j + 1) == LENGTH ? "\n" : j && !((j + 1) % 8) ? ",\n\t\t" : ", ");       \
-                                                                                                   \
-      printf("\t},\n");                                                                            \
-    }                                                                                              \
-                                                                                                   \
-    printf("};\n\n\n\n\n");                                                                        \
+#define MAKE_XOF_KEYED_KAT(name, size_prefix)                               \
+  do {                                                                      \
+    printf("static const uint8_t " #name                                    \
+           "_keyed_kat[BLAKE2_KAT_LENGTH][BLAKE2_KAT_LENGTH] = \n{\n");     \
+                                                                            \
+    for (i = 1; i <= LENGTH; ++i) {                                         \
+      name(hash, i, in, LENGTH, key, size_prefix##_KEYBYTES);               \
+      printf("\t{\n\t\t");                                                  \
+                                                                            \
+      for (j = 0; j < i; ++j)                                               \
+        printf("0x%02X%s", hash[j],                                         \
+               (j + 1) == LENGTH ? "\n"                                     \
+                                 : j && !((j + 1) % 8) ? ",\n\t\t" : ", "); \
+                                                                            \
+      for (j = i; j < LENGTH; ++j)                                          \
+        printf("0x00%s",                                                    \
+               (j + 1) == LENGTH ? "\n"                                     \
+                                 : j && !((j + 1) % 8) ? ",\n\t\t" : ", "); \
+                                                                            \
+      printf("\t},\n");                                                     \
+    }                                                                       \
+                                                                            \
+    printf("};\n\n\n\n\n");                                                 \
   } while (0)
 
 int main() {
@@ -118,10 +130,11 @@ int main() {
   for (i = 0; i < sizeof(key); ++i)
     key[i] = i;
 
-  puts("#ifndef BLAKE2_KAT_H\n"
-       "#define BLAKE2_KAT_H\n\n\n"
-       "#include <stdint.h>\n\n"
-       "#define BLAKE2_KAT_LENGTH " STR(LENGTH) "\n\n\n");
+  puts(
+      "#ifndef BLAKE2_KAT_H\n"
+      "#define BLAKE2_KAT_H\n\n\n"
+      "#include <stdint.h>\n\n"
+      "#define BLAKE2_KAT_LENGTH " STR(LENGTH) "\n\n\n");
   MAKE_KAT(blake2s, BLAKE2S);
   MAKE_KEYED_KAT(blake2s, BLAKE2S);
   MAKE_KAT(blake2b, BLAKE2B);

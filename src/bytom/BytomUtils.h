@@ -5,4 +5,4 @@
 
 uint64_t GetBlockRewardBytom(uint64_t nHeight);
 
-#endif //  BYTOM_UTILS_H_
+#endif  //  BYTOM_UTILS_H_

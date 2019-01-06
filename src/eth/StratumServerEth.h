@@ -32,53 +32,63 @@
 
 class JobRepositoryEth;
 
-class ServerEth : public ServerBase<JobRepositoryEth>
-{
-public:
+class ServerEth : public ServerBase<JobRepositoryEth> {
+ public:
   ServerEth(const int32_t shareAvgSeconds) : ServerBase(shareAvgSeconds) {}
   bool setupInternal(StratumServer* sserver) override;
-  int checkShareAndUpdateDiff(ShareEth &share,
+  int checkShareAndUpdateDiff(ShareEth& share,
                               const uint64_t jobId,
                               const uint64_t nonce,
-                              const uint256 &header,
-                              const std::set<uint64_t> &jobDiffs,
-                              uint256 &returnedMixHash,
-                              const string &workFullName);
-  void sendSolvedShare2Kafka(const string& strNonce, const string& strHeader, const string& strMix,
-                             const uint32_t height, const uint64_t networkDiff, const StratumWorker &worker,
+                              const uint256& header,
+                              const std::set<uint64_t>& jobDiffs,
+                              uint256& returnedMixHash,
+                              const string& workFullName);
+  void sendSolvedShare2Kafka(const string& strNonce,
+                             const string& strHeader,
+                             const string& strMix,
+                             const uint32_t height,
+                             const uint64_t networkDiff,
+                             const StratumWorker& worker,
                              const EthConsensus::Chain chain);
 
-  JobRepository* createJobRepository(const char *kafkaBrokers,
-                                    const char *consumerTopic,
-                                     const string &fileLastNotifyTime) override;
+  JobRepository* createJobRepository(const char* kafkaBrokers,
+                                     const char* consumerTopic,
+                                     const string& fileLastNotifyTime) override;
 
-  unique_ptr<StratumSession> createConnection(struct bufferevent *bev, struct sockaddr *saddr, const uint32_t sessionID) override;
+  unique_ptr<StratumSession> createConnection(
+      struct bufferevent* bev,
+      struct sockaddr* saddr,
+      const uint32_t sessionID) override;
 };
 
-class JobRepositoryEth : public JobRepositoryBase<ServerEth>
-{
-public:
-  JobRepositoryEth(const char *kafkaBrokers, const char *consumerTopic, const string &fileLastNotifyTime, ServerEth *server);
+class JobRepositoryEth : public JobRepositoryBase<ServerEth> {
+ public:
+  JobRepositoryEth(const char* kafkaBrokers,
+                   const char* consumerTopic,
+                   const string& fileLastNotifyTime,
+                   ServerEth* server);
   virtual ~JobRepositoryEth();
 
-  bool compute(ethash_h256_t const header, uint64_t nonce, ethash_return_value_t& r);
+  bool compute(ethash_h256_t const header,
+               uint64_t nonce,
+               ethash_return_value_t& r);
 
-  StratumJob *createStratumJob() override {return new StratumJobEth();}
-  StratumJobEx* createStratumJobEx(StratumJob *sjob, bool isClean) override;
-  void broadcastStratumJob(StratumJob *sjob) override;
+  StratumJob* createStratumJob() override { return new StratumJobEth(); }
+  StratumJobEx* createStratumJobEx(StratumJob* sjob, bool isClean) override;
+  void broadcastStratumJob(StratumJob* sjob) override;
 
   // re-computing light when checking share failed.
   void rebuildLightNonBlocking(StratumJobEth* job);
 
-private:
+ private:
   // TODO: move to configuration file
-  const char *kLightCacheFilePath = "./sserver-eth-dagcache.dat";
+  const char* kLightCacheFilePath = "./sserver-eth-dagcache.dat";
 
   // save ethash_light_t to file
   struct LightCacheHeader {
     uint64_t checkSum_;
-	  uint64_t blockNumber_;
-	  uint64_t cacheSize_;
+    uint64_t blockNumber_;
+    uint64_t cacheSize_;
   };
 
   void newLightNonBlocking(StratumJobEth* job);
@@ -88,16 +98,19 @@ private:
 
   // Creating a new ethash_light_t (DAG cache) is so slow (in Debug build),
   // it may need more than 120 seconds for current Ethereum mainnet.
-  // So save it to a file before shutdown and load it back at next time 
+  // So save it to a file before shutdown and load it back at next time
   // to reduce the computation time required after a reboot.
-  // 
-  // Note: The performance difference between Debug and Release builds is very large.
-  // The Release build may complete in 5 s, while the Debug build takes more than 60 s.
+  //
+  // Note: The performance difference between Debug and Release builds is very
+  // large.
+  // The Release build may complete in 5 s, while the Debug build takes more
+  // than 60 s.
   void saveLightToFile();
-  void saveLightToFile(const ethash_light_t &light, std::ofstream &f);
+  void saveLightToFile(const ethash_light_t& light, std::ofstream& f);
   void loadLightFromFile();
-  ethash_light_t loadLightFromFile(std::ifstream &f);
-  uint64_t computeLightCacheCheckSum(const LightCacheHeader &header, const uint8_t *data);
+  ethash_light_t loadLightFromFile(std::ifstream& f);
+  uint64_t computeLightCacheCheckSum(const LightCacheHeader& header,
+                                     const uint8_t* data);
 
   ethash_light_t light_;
   ethash_light_t nextLight_;
@@ -107,4 +120,4 @@ private:
 
   uint32_t lastHeight_;
 };
-#endif // STRATUM_SERVER_ETH_H_
+#endif  // STRATUM_SERVER_ETH_H_

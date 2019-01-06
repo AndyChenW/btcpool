@@ -11,18 +11,18 @@
 
 /** A hasher class for SHA-256. */
 class CSHA256 {
-private:
-    uint32_t s[8];
-    uint8_t buf[64];
-    uint64_t bytes;
+ private:
+  uint32_t s[8];
+  uint8_t buf[64];
+  uint64_t bytes;
 
-public:
-    static const size_t OUTPUT_SIZE = 32;
+ public:
+  static const size_t OUTPUT_SIZE = 32;
 
-    CSHA256();
-    CSHA256 &Write(const uint8_t *data, size_t len);
-    void Finalize(uint8_t hash[OUTPUT_SIZE]);
-    CSHA256 &Reset();
+  CSHA256();
+  CSHA256& Write(const uint8_t* data, size_t len);
+  void Finalize(uint8_t hash[OUTPUT_SIZE]);
+  CSHA256& Reset();
 };
 
 /**
@@ -31,4 +31,4 @@ public:
  */
 std::string SHA256AutoDetect();
 
-#endif // BITCOIN_CRYPTO_SHA256_H
+#endif  // BITCOIN_CRYPTO_SHA256_H

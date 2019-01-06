@@ -31,31 +31,43 @@
 class ServerDecred;
 
 class JobRepositoryDecred : public JobRepositoryBase<ServerDecred> {
-public:
-  JobRepositoryDecred(const char *kafkaBrokers, const char *consumerTopic, const string &fileLastNotifyTime, ServerDecred *server);
+ public:
+  JobRepositoryDecred(const char* kafkaBrokers,
+                      const char* consumerTopic,
+                      const string& fileLastNotifyTime,
+                      ServerDecred* server);
 
   StratumJob* createStratumJob() override;
-  void broadcastStratumJob(StratumJob *sjob) override;
+  void broadcastStratumJob(StratumJob* sjob) override;
 
-private:
+ private:
   uint32_t lastHeight_;
   uint16_t lastVoters_;
 };
 
 class ServerDecred : public ServerBase<JobRepositoryDecred> {
-public:
-  explicit ServerDecred(int32_t shareAvgSeconds, const libconfig::Config &config);
-  unique_ptr<StratumSession> createConnection(bufferevent *bev, sockaddr *saddr, uint32_t sessionID) override;
+ public:
+  explicit ServerDecred(int32_t shareAvgSeconds,
+                        const libconfig::Config& config);
+  unique_ptr<StratumSession> createConnection(bufferevent* bev,
+                                              sockaddr* saddr,
+                                              uint32_t sessionID) override;
 
-  int checkShare(ShareDecred &share, shared_ptr<StratumJobEx> exJobPtr, const vector<uint8_t> &extraNonce2,
-                 uint32_t ntime, uint32_t nonce, const string &workerFullName);
+  int checkShare(ShareDecred& share,
+                 shared_ptr<StratumJobEx> exJobPtr,
+                 const vector<uint8_t>& extraNonce2,
+                 uint32_t ntime,
+                 uint32_t nonce,
+                 const string& workerFullName);
 
-protected:
-  JobRepository* createJobRepository(const char *kafkaBrokers, const char *consumerTopic, const string &fileLastNotifyTime) override;
+ protected:
+  JobRepository* createJobRepository(const char* kafkaBrokers,
+                                     const char* consumerTopic,
+                                     const string& fileLastNotifyTime) override;
 
-private:
-  void sendSolvedShare2Kafka(const FoundBlockDecred &foundBlock);
-  
+ private:
+  void sendSolvedShare2Kafka(const FoundBlockDecred& foundBlock);
+
   unique_ptr<StratumProtocolDecred> protocol_;
 };
 

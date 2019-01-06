@@ -31,4 +31,4 @@
 //////////////////////////////  Alias  ///////////////////////////////
 using ShareLogWriterBitcoin = ShareLogWriterT<ShareBitcoin>;
 
-#endif // SHARELOGGER_BITCOIN_H_
+#endif  // SHARELOGGER_BITCOIN_H_

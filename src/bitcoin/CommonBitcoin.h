@@ -1,4 +1,4 @@
-/* 
+/*
  The MIT License (MIT)
 
  Copyright (c) [2016] [BTC.COM]
@@ -29,15 +29,14 @@
 #include <uint256.h>
 
 ////////////////////////////// for Bitcoin //////////////////////////////
-uint64_t TargetToDiff(uint256 &target);
-uint64_t TargetToDiff(const string &str);
+uint64_t TargetToDiff(uint256& target);
+uint64_t TargetToDiff(const string& str);
 
-void BitsToTarget(uint32_t bits, uint256 & target);
-void DiffToTarget(uint64_t diff, uint256 & target, bool useTable=true);
-void BitsToDifficulty(uint32_t bits, double *difficulty);
-void BitsToDifficulty(uint32_t bits, uint64_t *difficulty);
+void BitsToTarget(uint32_t bits, uint256& target);
+void DiffToTarget(uint64_t diff, uint256& target, bool useTable = true);
+void BitsToDifficulty(uint32_t bits, double* difficulty);
+void BitsToDifficulty(uint32_t bits, uint64_t* difficulty);
 
 ////////////////////////////// for Bitcoin //////////////////////////////
-
 
 #endif

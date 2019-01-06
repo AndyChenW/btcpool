@@ -30,4 +30,4 @@
 ////////////////////////////  Alias  ////////////////////////////
 using StatsServerEth = StatsServerT<ShareEth>;
 
-#endif // STATSHTTPD_BYTOM_H_
+#endif  // STATSHTTPD_BYTOM_H_

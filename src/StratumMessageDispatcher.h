@@ -40,67 +40,83 @@ class DiffController;
 struct LocalJob;
 
 class StratumMessageDispatcher {
-public:
+ public:
   virtual ~StratumMessageDispatcher() = default;
 
-  virtual void handleRequest(const std::string &idStr, const std::string &method, const JsonNode &jparams, const JsonNode &jroot) = 0;
-  virtual void handleExMessage(const std::string &exMessage) = 0;
-  virtual void responseShareAccepted(const std::string &idStr) = 0;
-  virtual void responseShareError(const std::string &idStr, int32_t status) = 0;
+  virtual void handleRequest(const std::string& idStr,
+                             const std::string& method,
+                             const JsonNode& jparams,
+                             const JsonNode& jroot) = 0;
+  virtual void handleExMessage(const std::string& exMessage) = 0;
+  virtual void responseShareAccepted(const std::string& idStr) = 0;
+  virtual void responseShareError(const std::string& idStr, int32_t status) = 0;
   virtual void setMinDiff(uint64_t minDiff) = 0;
   virtual void resetCurDiff(uint64_t curDiff) = 0;
-  virtual void addLocalJob(LocalJob &localJob) = 0;
-  virtual void removeLocalJob(LocalJob &localJob) = 0;
+  virtual void addLocalJob(LocalJob& localJob) = 0;
+  virtual void removeLocalJob(LocalJob& localJob) = 0;
 };
 
 class StratumMessageMinerDispatcher : public StratumMessageDispatcher {
-public:
-  StratumMessageMinerDispatcher(IStratumSession &session, std::unique_ptr<StratumMiner> miner);
+ public:
+  StratumMessageMinerDispatcher(IStratumSession& session,
+                                std::unique_ptr<StratumMiner> miner);
 
-  void handleRequest(const std::string &idStr, const std::string &method, const JsonNode &jparams, const JsonNode &jroot) override;
-  void handleExMessage(const std::string &exMessage) override;
-  void responseShareAccepted(const std::string &idStr) override;
-  void responseShareError(const std::string &idStr, int32_t status) override;
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
+  void handleExMessage(const std::string& exMessage) override;
+  void responseShareAccepted(const std::string& idStr) override;
+  void responseShareError(const std::string& idStr, int32_t status) override;
   void setMinDiff(uint64_t minDiff) override;
   void resetCurDiff(uint64_t curDiff) override;
-  void addLocalJob(LocalJob &localJob) override;
-  void removeLocalJob(LocalJob &localJob) override;
+  void addLocalJob(LocalJob& localJob) override;
+  void removeLocalJob(LocalJob& localJob) override;
 
-protected:
-  IStratumSession &session_;
+ protected:
+  IStratumSession& session_;
   std::unique_ptr<StratumMiner> miner_;
 };
 
 class StratumMessageAgentDispatcher : public StratumMessageDispatcher {
-public:
-  explicit StratumMessageAgentDispatcher(IStratumSession &session, const DiffController &diffController);
+ public:
+  explicit StratumMessageAgentDispatcher(IStratumSession& session,
+                                         const DiffController& diffController);
   ~StratumMessageAgentDispatcher();
 
-  void handleRequest(const std::string &idStr, const std::string &method, const JsonNode &jparams, const JsonNode &jroot) override;
-  void handleExMessage(const std::string &exMessage) override;
-  void responseShareAccepted(const std::string &idStr) override {}
-  void responseShareError(const std::string &idStr, int32_t status) override {}
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
+  void handleExMessage(const std::string& exMessage) override;
+  void responseShareAccepted(const std::string& idStr) override {}
+  void responseShareError(const std::string& idStr, int32_t status) override {}
   void setMinDiff(uint64_t minDiff) override;
   void resetCurDiff(uint64_t curDiff) override;
-  void addLocalJob(LocalJob &localJob) override;
-  void removeLocalJob(LocalJob &localJob) override;
+  void addLocalJob(LocalJob& localJob) override;
+  void removeLocalJob(LocalJob& localJob) override;
 
-protected:
-  void handleExMessage_RegisterWorker(const std::string &exMessage);
-  void handleExMessage_UnregisterWorker(const std::string &exMessage);
-  void handleExMessage_SessionSpecific(const std::string &exMessage);
+ protected:
+  void handleExMessage_RegisterWorker(const std::string& exMessage);
+  void handleExMessage_UnregisterWorker(const std::string& exMessage);
+  void handleExMessage_SessionSpecific(const std::string& exMessage);
 
-public:
+ public:
   // These are public for unittests...
-  void registerWorker(uint32_t sessionId, const std::string &clientAgent, const std::string &workerName, int64_t workerId);
+  void registerWorker(uint32_t sessionId,
+                      const std::string& clientAgent,
+                      const std::string& workerName,
+                      int64_t workerId);
   void unregisterWorker(uint32_t sessionId);
-  static void getSetDiffCommand(std::map<uint8_t, std::vector<uint16_t>> &diffSessionIds, std::string &exMessage);
+  static void getSetDiffCommand(
+      std::map<uint8_t, std::vector<uint16_t>>& diffSessionIds,
+      std::string& exMessage);
 
-protected:
-  IStratumSession &session_;
+ protected:
+  IStratumSession& session_;
   std::unique_ptr<DiffController> diffController_;
   uint64_t curDiff_;
   std::map<uint16_t, std::unique_ptr<StratumMiner>> miners_;
 };
 
-#endif // #ifndef STRATUM_MESSAGE_DISPATCHER_H
+#endif  // #ifndef STRATUM_MESSAGE_DISPATCHER_H

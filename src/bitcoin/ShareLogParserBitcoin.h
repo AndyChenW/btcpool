@@ -24,7 +24,6 @@
 #ifndef SHARELOGPARSER_BITCOIN_H_
 #define SHARELOGPARSER_BITCOIN_H_
 
-
 #include "ShareLogParser.h"
 
 #include "StratumBitcoin.h"
@@ -34,4 +33,4 @@ using ShareLogDumperBitcoin = ShareLogDumperT<ShareBitcoin>;
 using ShareLogParserBitcoin = ShareLogParserT<ShareBitcoin>;
 using ShareLogParserServerBitcoin = ShareLogParserServerT<ShareBitcoin>;
 
-#endif // SHARELOGPARSER_H_
+#endif  // SHARELOGPARSER_H_

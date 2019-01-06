@@ -31,10 +31,8 @@
 #include <uint256.h>
 #include <base58.h>
 
-
-class JobMakerHandlerBitcoin : public JobMakerHandler
-{
-  mutex lock_; // lock when update rawgbtMap_
+class JobMakerHandlerBitcoin : public JobMakerHandler {
+  mutex lock_;  // lock when update rawgbtMap_
   mutex auxJsonLock_;
   mutex rskWorkAccessLock_;
 
@@ -43,7 +41,8 @@ class JobMakerHandlerBitcoin : public JobMakerHandler
   uint32_t currBestHeight_;
   uint32_t lastJobSendTime_;
   bool isLastJobEmptyBlock_;
-  std::map<uint64_t/* @see makeGbtKey() */, string> rawgbtMap_;  // sorted gbt by timestamp
+  std::map<uint64_t /* @see makeGbtKey() */, string>
+      rawgbtMap_;  // sorted gbt by timestamp
   deque<uint256> lastestGbtHash_;
 
   // merged mining for AuxPow blocks (example: Namecoin, ElastOS)
@@ -52,11 +51,11 @@ class JobMakerHandlerBitcoin : public JobMakerHandler
   uint32_t latestNmcAuxBlockHeight_;
 
   // merged mining for RSK
-  RskWork *previousRskWork_;
-  RskWork *currentRskWork_;
-  bool isMergedMiningUpdate_; // a flag to mark RSK has an update
+  RskWork* previousRskWork_;
+  RskWork* currentRskWork_;
+  bool isMergedMiningUpdate_;  // a flag to mark RSK has an update
 
-  bool addRawGbt(const string &msg);
+  bool addRawGbt(const string& msg);
   void clearTimeoutGbt();
   bool isReachTimeout();
 
@@ -65,29 +64,35 @@ class JobMakerHandlerBitcoin : public JobMakerHandler
 
   // return false if there is no best rawGbt or
   // doesn't need to send a stratum job at current.
-  bool findBestRawGbt(bool isMergedMiningUpdate, string &bestRawGbt);
-  string makeStratumJob(const string &gbt);
+  bool findBestRawGbt(bool isMergedMiningUpdate, string& bestRawGbt);
+  string makeStratumJob(const string& gbt);
 
-  inline uint64_t makeGbtKey(uint32_t gbtTime, bool isEmptyBlock, uint32_t height);
-  inline uint32_t gbtKeyGetTime     (uint64_t gbtKey);
-  inline uint32_t gbtKeyGetHeight   (uint64_t gbtKey);
-  inline bool     gbtKeyIsEmptyBlock(uint64_t gbtKey);
+  inline uint64_t makeGbtKey(uint32_t gbtTime,
+                             bool isEmptyBlock,
+                             uint32_t height);
+  inline uint32_t gbtKeyGetTime(uint64_t gbtKey);
+  inline uint32_t gbtKeyGetHeight(uint64_t gbtKey);
+  inline bool gbtKeyIsEmptyBlock(uint64_t gbtKey);
 
-public:
+ public:
   JobMakerHandlerBitcoin();
   virtual ~JobMakerHandlerBitcoin() {}
 
   bool init(shared_ptr<JobMakerDefinition> def) override;
-  virtual bool initConsumerHandlers(const string &kafkaBrokers, vector<JobMakerConsumerHandler> &handlers) override;
-  
-  bool processRawGbtMsg(const string &msg);
-  bool processAuxPowMsg(const string &msg);
-  bool processRskGwMsg(const string &msg);
+  virtual bool initConsumerHandlers(
+      const string& kafkaBrokers,
+      vector<JobMakerConsumerHandler>& handlers) override;
+
+  bool processRawGbtMsg(const string& msg);
+  bool processAuxPowMsg(const string& msg);
+  bool processRskGwMsg(const string& msg);
 
   virtual string makeStratumJobMsg() override;
 
   // read-only definition
-  inline shared_ptr<const GbtJobMakerDefinition> def() { return std::dynamic_pointer_cast<const GbtJobMakerDefinition>(def_); }
+  inline shared_ptr<const GbtJobMakerDefinition> def() {
+    return std::dynamic_pointer_cast<const GbtJobMakerDefinition>(def_);
+  }
 };
 
 #endif

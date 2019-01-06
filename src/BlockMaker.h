@@ -31,58 +31,55 @@
 
 #include <vector>
 
-struct NodeDefinition
-{
+struct NodeDefinition {
   string rpcAddr_;
   string rpcUserPwd_;
 };
 
-struct BlockMakerDefinition
-{
+struct BlockMakerDefinition {
   string chainType_;
   bool enabled_;
-  vector<NodeDefinition> nodes; 
+  vector<NodeDefinition> nodes;
   string solvedShareTopic_;
   string foundAuxBlockTable_;
 
   virtual ~BlockMakerDefinition() {}
 };
 
-struct BlockMakerDefinitionBitcoin : public BlockMakerDefinition
-{
+struct BlockMakerDefinitionBitcoin : public BlockMakerDefinition {
   string rawGbtTopic_;
   string stratumJobTopic_;
-  string auxPowSolvedShareTopic_; // merged mining solved share topic
+  string auxPowSolvedShareTopic_;  // merged mining solved share topic
   string rskSolvedShareTopic_;
 
   virtual ~BlockMakerDefinitionBitcoin() {}
 };
 
 ////////////////////////////////// BlockMaker //////////////////////////////////
-class BlockMaker
-{
-protected:
+class BlockMaker {
+ protected:
   shared_ptr<BlockMakerDefinition> def_;
   atomic<bool> running_;
 
   KafkaConsumer kafkaConsumerSolvedShare_;
 
-  MysqlConnectInfo poolDB_; // save blocks to table.found_blocks
+  MysqlConnectInfo poolDB_;  // save blocks to table.found_blocks
 
   void runThreadConsumeSolvedShare();
-  void consumeSolvedShare(rd_kafka_message_t *rkmessage);
-  virtual void processSolvedShare(rd_kafka_message_t *rkmessage) = 0;
+  void consumeSolvedShare(rd_kafka_message_t* rkmessage);
+  virtual void processSolvedShare(rd_kafka_message_t* rkmessage) = 0;
   // read-only definition
   inline shared_ptr<const BlockMakerDefinition> def() { return def_; }
 
-public:
-  BlockMaker(shared_ptr<BlockMakerDefinition> def, const char *kafkaBrokers, const MysqlConnectInfo &poolDB);
+ public:
+  BlockMaker(shared_ptr<BlockMakerDefinition> def,
+             const char* kafkaBrokers,
+             const MysqlConnectInfo& poolDB);
   virtual ~BlockMaker();
 
   virtual bool init();
   virtual void stop();
   virtual void run();
 };
-
 
 #endif

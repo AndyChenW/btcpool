@@ -30,27 +30,26 @@
 #include <boost/thread.hpp>
 
 ////////////////////////////////////////////////BlockMakerEth////////////////////////////////////////////////////////////////
-BlockMakerEth::BlockMakerEth(shared_ptr<BlockMakerDefinition> def, const char *kafkaBrokers, const MysqlConnectInfo &poolDB) 
-  : BlockMaker(def, kafkaBrokers, poolDB)
-{
+BlockMakerEth::BlockMakerEth(shared_ptr<BlockMakerDefinition> def,
+                             const char* kafkaBrokers,
+                             const MysqlConnectInfo& poolDB)
+    : BlockMaker(def, kafkaBrokers, poolDB) {
   useSubmitBlockDetail_ = checkRpcSubmitBlockDetail();
   if (useSubmitBlockDetail_) {
     LOG(INFO) << "use RPC eth_submitBlockDetail";
-  }
-  else if (checkRpcSubmitBlock()) {
-    LOG(INFO) << "use RPC eth_submitBlock, it has limited functionality and the block hash will not be recorded.";
-  }
-  else {
-    LOG(FATAL) << "Ethereum nodes doesn't support both eth_submitBlockDetail and eth_submitBlock, cannot submit block!";
+  } else if (checkRpcSubmitBlock()) {
+    LOG(INFO) << "use RPC eth_submitBlock, it has limited functionality and "
+                 "the block hash will not be recorded.";
+  } else {
+    LOG(FATAL) << "Ethereum nodes doesn't support both eth_submitBlockDetail "
+                  "and eth_submitBlock, cannot submit block!";
   }
 }
 
-void BlockMakerEth::processSolvedShare(rd_kafka_message_t *rkmessage)
-{
-  const char *message = (const char *)rkmessage->payload;
+void BlockMakerEth::processSolvedShare(rd_kafka_message_t* rkmessage) {
+  const char* message = (const char*)rkmessage->payload;
   JsonNode r;
-  if (!JsonNode::parse(message, message + rkmessage->len, r))
-  {
+  if (!JsonNode::parse(message, message + rkmessage->len, r)) {
     LOG(ERROR) << "decode common event failure";
     return;
   }
@@ -64,8 +63,7 @@ void BlockMakerEth::processSolvedShare(rd_kafka_message_t *rkmessage)
       r["userId"].type() != Utilities::JS::type::Int ||
       r["workerId"].type() != Utilities::JS::type::Int ||
       r["workerFullName"].type() != Utilities::JS::type::Str ||
-      r["chain"].type() != Utilities::JS::type::Str)
-  {
+      r["chain"].type() != Utilities::JS::type::Str) {
     LOG(ERROR) << "eth solved share format wrong";
     return;
   }
@@ -75,21 +73,27 @@ void BlockMakerEth::processSolvedShare(rd_kafka_message_t *rkmessage)
   worker.workerHashId_ = r["workerId"].int64();
   worker.fullName_ = r["workerFullName"].str();
 
-  submitBlockNonBlocking(r["nonce"].str(), r["header"].str(), r["mix"].str(), def()->nodes,
-                         r["height"].uint32(), r["chain"].str(), r["networkDiff"].uint64(),
-                         worker);
+  submitBlockNonBlocking(r["nonce"].str(), r["header"].str(), r["mix"].str(),
+                         def()->nodes, r["height"].uint32(), r["chain"].str(),
+                         r["networkDiff"].uint64(), worker);
 }
 
-bool BlockMakerEth::submitBlock(const string &nonce, const string &header, const string &mix,
-                                const string &rpcUrl, const string &rpcUserPass,
-                                string &/*errMsg*/, string &/*blockHash*/) {
-  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWork\", \"params\": [\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
-                                   HexAddPrefix(nonce).c_str(),
-                                   HexAddPrefix(header).c_str(),
-                                   HexAddPrefix(mix).c_str());
+bool BlockMakerEth::submitBlock(const string& nonce,
+                                const string& header,
+                                const string& mix,
+                                const string& rpcUrl,
+                                const string& rpcUserPass,
+                                string& /*errMsg*/,
+                                string& /*blockHash*/) {
+  string request = Strings::Format(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWork\", \"params\": "
+      "[\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
+      HexAddPrefix(nonce).c_str(), HexAddPrefix(header).c_str(),
+      HexAddPrefix(mix).c_str());
 
   string response;
-  bool ok = blockchainNodeRpcCall(rpcUrl.c_str(), rpcUserPass.c_str(), request.c_str(), response);
+  bool ok = blockchainNodeRpcCall(rpcUrl.c_str(), rpcUserPass.c_str(),
+                                  request.c_str(), response);
   DLOG(INFO) << "eth_submitWork request: " << request;
   DLOG(INFO) << "eth_submitWork response: " << response;
   if (!ok) {
@@ -98,13 +102,17 @@ bool BlockMakerEth::submitBlock(const string &nonce, const string &header, const
   }
 
   JsonNode r;
-  if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r)) {
-    LOG(WARNING) << "decode response failure, node url: " << rpcUrl << ", response: " << response;
+  if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                       r)) {
+    LOG(WARNING) << "decode response failure, node url: " << rpcUrl
+                 << ", response: " << response;
     return false;
   }
 
-  if (r.type() != Utilities::JS::type::Obj || r["result"].type() != Utilities::JS::type::Bool) {
-    LOG(WARNING) << "node doesn't support eth_submitWork, node url: " << rpcUrl << ", response: " << response;
+  if (r.type() != Utilities::JS::type::Obj ||
+      r["result"].type() != Utilities::JS::type::Bool) {
+    LOG(WARNING) << "node doesn't support eth_submitWork, node url: " << rpcUrl
+                 << ", response: " << response;
     return false;
   }
 
@@ -113,17 +121,19 @@ bool BlockMakerEth::submitBlock(const string &nonce, const string &header, const
 
 /**
   * RPC eth_submitWorkDetail:
-  *     A new RPC to submit POW work to Ethereum node. It has the same functionality as `eth_submitWork`
+  *     A new RPC to submit POW work to Ethereum node. It has the same
+ * functionality as `eth_submitWork`
   *     but returns more details about the submitted block.
-  *     It defined by the BTCPool project and implemented in the Parity Ethereum node as a patch.
-  * 
+  *     It defined by the BTCPool project and implemented in the Parity Ethereum
+ * node as a patch.
+  *
   * Params (same as `eth_submitWork`):
   *     [
   *         (string) nonce,
   *         (string) pow_hash,
   *         (string) mix_hash
   *     ]
-  * 
+  *
   * Result:
   *     [
   *         (bool)           success,
@@ -132,39 +142,50 @@ bool BlockMakerEth::submitBlock(const string &nonce, const string &header, const
   *         ... // more fields may added in the future
   *     ]
   */
-bool BlockMakerEth::submitBlockDetail(const string &nonce, const string &header, const string &mix,
-                                      const string &rpcUrl, const string &rpcUserPass,
-                                      string &errMsg, string &blockHash) {
-  
-  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWorkDetail\", \"params\": [\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
-                                   HexAddPrefix(nonce).c_str(),
-                                   HexAddPrefix(header).c_str(),
-                                   HexAddPrefix(mix).c_str());
+bool BlockMakerEth::submitBlockDetail(const string& nonce,
+                                      const string& header,
+                                      const string& mix,
+                                      const string& rpcUrl,
+                                      const string& rpcUserPass,
+                                      string& errMsg,
+                                      string& blockHash) {
+  string request = Strings::Format(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWorkDetail\", "
+      "\"params\": [\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
+      HexAddPrefix(nonce).c_str(), HexAddPrefix(header).c_str(),
+      HexAddPrefix(mix).c_str());
 
   string response;
-  bool ok = blockchainNodeRpcCall(rpcUrl.c_str(), rpcUserPass.c_str(), request.c_str(), response);
+  bool ok = blockchainNodeRpcCall(rpcUrl.c_str(), rpcUserPass.c_str(),
+                                  request.c_str(), response);
   DLOG(INFO) << "eth_submitWorkDetail request: " << request;
   DLOG(INFO) << "eth_submitWorkDetail response: " << response;
   if (!ok) {
-    LOG(WARNING) << "Call RPC eth_submitWorkDetail failed, node url: " << rpcUrl;
+    LOG(WARNING) << "Call RPC eth_submitWorkDetail failed, node url: "
+                 << rpcUrl;
     return false;
   }
 
   JsonNode r;
-  if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r)) {
-    LOG(WARNING) << "decode response failure, node url: " << rpcUrl << ", response: " << response;
+  if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                       r)) {
+    LOG(WARNING) << "decode response failure, node url: " << rpcUrl
+                 << ", response: " << response;
     return false;
   }
 
-  if (r.type() != Utilities::JS::type::Obj || r["result"].type() != Utilities::JS::type::Array) {
-    LOG(WARNING) << "node doesn't support eth_submitWorkDetail, node url: " << rpcUrl << ", response: " << response;
+  if (r.type() != Utilities::JS::type::Obj ||
+      r["result"].type() != Utilities::JS::type::Array) {
+    LOG(WARNING) << "node doesn't support eth_submitWorkDetail, node url: "
+                 << rpcUrl << ", response: " << response;
     return false;
   }
 
   auto result = r["result"].children();
 
   bool success = false;
-  if (result->size() >= 1 && result->at(0).type() == Utilities::JS::type::Bool) {
+  if (result->size() >= 1 &&
+      result->at(0).type() == Utilities::JS::type::Bool) {
     success = result->at(0).boolean();
   }
 
@@ -180,27 +201,36 @@ bool BlockMakerEth::submitBlockDetail(const string &nonce, const string &header,
 }
 
 bool BlockMakerEth::checkRpcSubmitBlock() {
-  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWork\", \"params\": [\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
-                                   "0x0000000000000000",
-                                   "0x0000000000000000000000000000000000000000000000000000000000000000",
-                                   "0x0000000000000000000000000000000000000000000000000000000000000000");
+  string request = Strings::Format(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWork\", \"params\": "
+      "[\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
+      "0x0000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000000");
 
-  for (const auto &itr : def()->nodes) {
+  for (const auto& itr : def()->nodes) {
     string response;
-    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
+    bool ok =
+        blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(),
+                              request.c_str(), response);
     if (!ok) {
-      LOG(WARNING) << "Call RPC eth_submitWork failed, node url: " << itr.rpcAddr_;
+      LOG(WARNING) << "Call RPC eth_submitWork failed, node url: "
+                   << itr.rpcAddr_;
       return false;
     }
 
     JsonNode r;
-    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r)) {
-      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                         r)) {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_
+                   << ", response: " << response;
       return false;
     }
 
-    if (r.type() != Utilities::JS::type::Obj || r["result"].type() != Utilities::JS::type::Bool) {
-      LOG(WARNING) << "node doesn't support eth_submitWork, node url: " << itr.rpcAddr_ << ", response: " << response;
+    if (r.type() != Utilities::JS::type::Obj ||
+        r["result"].type() != Utilities::JS::type::Bool) {
+      LOG(WARNING) << "node doesn't support eth_submitWork, node url: "
+                   << itr.rpcAddr_ << ", response: " << response;
       return false;
     }
   }
@@ -209,36 +239,43 @@ bool BlockMakerEth::checkRpcSubmitBlock() {
 }
 
 bool BlockMakerEth::checkRpcSubmitBlockDetail() {
-  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWorkDetail\", \"params\": [\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
-                                   "0x0000000000000000",
-                                   "0x0000000000000000000000000000000000000000000000000000000000000000",
-                                   "0x0000000000000000000000000000000000000000000000000000000000000000");
+  string request = Strings::Format(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"eth_submitWorkDetail\", "
+      "\"params\": [\"%s\",\"%s\",\"%s\"], \"id\": 5}\n",
+      "0x0000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000000");
 
   if (def()->nodes.empty()) {
     LOG(FATAL) << "Node list is empty, cannot submit block!";
     return false;
   }
 
-  for (const auto &itr : def()->nodes) {
+  for (const auto& itr : def()->nodes) {
     string response;
-    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
+    bool ok =
+        blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(),
+                              request.c_str(), response);
     if (!ok) {
-      LOG(WARNING) << "Call RPC eth_submitWorkDetail failed, node url: " << itr.rpcAddr_;
+      LOG(WARNING) << "Call RPC eth_submitWorkDetail failed, node url: "
+                   << itr.rpcAddr_;
       return false;
     }
 
     JsonNode r;
-    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r)) {
-      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                         r)) {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_
+                   << ", response: " << response;
       return false;
     }
 
     if (r.type() != Utilities::JS::type::Obj ||
-      r["result"].type() != Utilities::JS::type::Array ||
-      r["result"].children()->size() < 3 ||
-      r["result"].children()->at(0).type() != Utilities::JS::type::Bool)
-    {
-      LOG(WARNING) << "node doesn't support eth_submitWorkDetail, node url: " << itr.rpcAddr_ << ", response: " << response;
+        r["result"].type() != Utilities::JS::type::Array ||
+        r["result"].children()->size() < 3 ||
+        r["result"].children()->at(0).type() != Utilities::JS::type::Bool) {
+      LOG(WARNING) << "node doesn't support eth_submitWorkDetail, node url: "
+                   << itr.rpcAddr_ << ", response: " << response;
       return false;
     }
   }
@@ -246,51 +283,68 @@ bool BlockMakerEth::checkRpcSubmitBlockDetail() {
   return true;
 }
 
-void BlockMakerEth::submitBlockNonBlocking(const string &nonce, const string &header, const string &mix, const vector<NodeDefinition> &nodes,
-                                           const uint32_t height, const string &chain, const uint64_t networkDiff, const StratumWorker &worker) {
+void BlockMakerEth::submitBlockNonBlocking(const string& nonce,
+                                           const string& header,
+                                           const string& mix,
+                                           const vector<NodeDefinition>& nodes,
+                                           const uint32_t height,
+                                           const string& chain,
+                                           const uint64_t networkDiff,
+                                           const StratumWorker& worker) {
   std::vector<std::shared_ptr<std::thread>> threadPool;
   std::atomic<bool> syncSubmitSuccess(false);
 
   // run threads
-  for (size_t i=0; i<nodes.size(); i++) {
-    auto t = std::make_shared<std::thread>(
-      std::bind(&BlockMakerEth::_submitBlockThread, this,
-                nonce, header, mix, nodes[i],
-                height, chain, networkDiff, worker,
-                &syncSubmitSuccess));
+  for (size_t i = 0; i < nodes.size(); i++) {
+    auto t = std::make_shared<std::thread>(std::bind(
+        &BlockMakerEth::_submitBlockThread, this, nonce, header, mix, nodes[i],
+        height, chain, networkDiff, worker, &syncSubmitSuccess));
     threadPool.push_back(t);
   }
 
   // waiting for threads to end
-  for (auto &t : threadPool) {
+  for (auto& t : threadPool) {
     t->join();
   }
 }
 
-void BlockMakerEth::_submitBlockThread(const string &nonce, const string &header, const string &mix, const NodeDefinition &node,
-                                       const uint32_t height, const string &chain, const uint64_t networkDiff, const StratumWorker &worker,
-                                       std::atomic<bool> *syncSubmitSuccess) {
+void BlockMakerEth::_submitBlockThread(const string& nonce,
+                                       const string& header,
+                                       const string& mix,
+                                       const NodeDefinition& node,
+                                       const uint32_t height,
+                                       const string& chain,
+                                       const uint64_t networkDiff,
+                                       const StratumWorker& worker,
+                                       std::atomic<bool>* syncSubmitSuccess) {
   string blockHash;
 
   auto submitBlockOnce = [&]() {
     // use eth_submitWorkDetail or eth_submitWork
-    auto submitFunc = useSubmitBlockDetail_ ? BlockMakerEth::submitBlockDetail : BlockMakerEth::submitBlock;
-    auto submitRpcName = useSubmitBlockDetail_ ? "eth_submitWorkDetail" : "eth_submitWork";
+    auto submitFunc = useSubmitBlockDetail_ ? BlockMakerEth::submitBlockDetail
+                                            : BlockMakerEth::submitBlock;
+    auto submitRpcName =
+        useSubmitBlockDetail_ ? "eth_submitWorkDetail" : "eth_submitWork";
 
     string errMsg;
-    bool success = submitFunc(nonce, header, mix, node.rpcAddr_, node.rpcUserPwd_, errMsg, blockHash);
+    bool success = submitFunc(nonce, header, mix, node.rpcAddr_,
+                              node.rpcUserPwd_, errMsg, blockHash);
     if (success) {
-      LOG(INFO) << submitRpcName << " success, chain: " << chain << ", height: " << height
-                << ", hash: " << blockHash << ", hash_no_nonce: " << header
-                << ", networkDiff: " << networkDiff << ", worker: " << worker.fullName_;
+      LOG(INFO) << submitRpcName << " success, chain: " << chain
+                << ", height: " << height << ", hash: " << blockHash
+                << ", hash_no_nonce: " << header
+                << ", networkDiff: " << networkDiff
+                << ", worker: " << worker.fullName_;
 
-      //add thread for classify block_states.
-      boost::thread thread(std::bind(&BlockMakerEth::isUnclesThread, this, height, nonce));
+      // add thread for classify block_states.
+      boost::thread thread(
+          std::bind(&BlockMakerEth::isUnclesThread, this, height, nonce));
 
       return true;
     }
 
-    LOG(WARNING) << submitRpcName << " failed, chain: " << chain << ", height: " << height << ", hash_no_nonce: " << header
+    LOG(WARNING) << submitRpcName << " failed, chain: " << chain
+                 << ", height: " << height << ", hash_no_nonce: " << header
                  << ", err_msg: " << errMsg;
     return false;
   };
@@ -298,14 +352,15 @@ void BlockMakerEth::_submitBlockThread(const string &nonce, const string &header
   int retryTime = 5;
   while (retryTime > 0) {
     if (*syncSubmitSuccess) {
-      LOG(INFO) << "_submitBlockThread(" << node.rpcAddr_ << "): " << "other thread submit success, skip";
+      LOG(INFO) << "_submitBlockThread(" << node.rpcAddr_ << "): "
+                << "other thread submit success, skip";
       return;
     }
     if (submitBlockOnce()) {
       *syncSubmitSuccess = true;
       break;
     }
-    sleep(6 - retryTime); // first sleep 1s, second sleep 2s, ...
+    sleep(6 - retryTime);  // first sleep 1s, second sleep 2s, ...
     retryTime--;
   }
 
@@ -313,27 +368,32 @@ void BlockMakerEth::_submitBlockThread(const string &nonce, const string &header
   saveBlockToDB(nonce, header, blockHash, height, chain, networkDiff, worker);
 }
 
-void BlockMakerEth::saveBlockToDB(const string &nonce, const string &header, const string &blockHash, const uint32_t height,
-                                  const string &chain, const uint64_t networkDiff, const StratumWorker &worker) {
+void BlockMakerEth::saveBlockToDB(const string& nonce,
+                                  const string& header,
+                                  const string& blockHash,
+                                  const uint32_t height,
+                                  const string& chain,
+                                  const uint64_t networkDiff,
+                                  const StratumWorker& worker) {
   const string nowStr = date("%F %T");
   string sql;
-  sql = Strings::Format("INSERT INTO `found_blocks` "
-                        " (`puid`, `worker_id`"
-                        ", `worker_full_name`, `chain`"
-                        ", `height`, `hash`, `hash_no_nonce`, `nonce`"
-                        ", `rewards`"
-                        ", `network_diff`, `created_at`)"
-                        " VALUES (%ld, %" PRId64
-                        ", '%s', '%s'"
-                        ", %lu, '%s', '%s', '%s'"
-                        ", %" PRId64
-                        ", %" PRIu64 ", '%s'); ",
-                        worker.userId_, worker.workerHashId_,
-                        // filter again, just in case
-                        filterWorkerName(worker.fullName_).c_str(), chain.c_str(),
-                        height, blockHash.c_str(), header.c_str(), nonce.c_str(),
-                        EthConsensus::getStaticBlockReward(height, chain),
-                        networkDiff, nowStr.c_str());
+  sql = Strings::Format(
+      "INSERT INTO `found_blocks` "
+      " (`puid`, `worker_id`"
+      ", `worker_full_name`, `chain`"
+      ", `height`, `hash`, `hash_no_nonce`, `nonce`"
+      ", `rewards`"
+      ", `network_diff`, `created_at`)"
+      " VALUES (%ld, %" PRId64
+      ", '%s', '%s'"
+      ", %lu, '%s', '%s', '%s'"
+      ", %" PRId64 ", %" PRIu64 ", '%s'); ",
+      worker.userId_, worker.workerHashId_,
+      // filter again, just in case
+      filterWorkerName(worker.fullName_).c_str(), chain.c_str(), height,
+      blockHash.c_str(), header.c_str(), nonce.c_str(),
+      EthConsensus::getStaticBlockReward(height, chain), networkDiff,
+      nowStr.c_str());
 
   // try connect to DB
   MySQLConnection db(poolDB_);
@@ -346,23 +406,20 @@ void BlockMakerEth::saveBlockToDB(const string &nonce, const string &header, con
 
   if (db.execute(sql) == false) {
     LOG(ERROR) << "insert found block failure: " << sql;
-  }
-  else
-  {
+  } else {
     LOG(INFO) << "insert found block success for height " << height;
   }
 }
 
 const int64_t REWARDS = 2e+18;
-const int ETH_MAX_UNCLE_GENERATIONS = 8; 
-const int ETH_MAX_UNCLE_LOERHEIGHT = 6; 
-void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce)
-{
+const int ETH_MAX_UNCLE_GENERATIONS = 8;
+const int ETH_MAX_UNCLE_LOERHEIGHT = 6;
+void BlockMakerEth::isUnclesThread(const uint32_t height, const string& nonce) {
   bool is_wait = true;
-  while(is_wait)
-  {
+  while (is_wait) {
     string strCurrentHeight = BlockMakerEth::getBlockHeight();
-    uint32_t currentHeight = (uint32_t)strtoul(strCurrentHeight.c_str(), nullptr, 16);
+    uint32_t currentHeight =
+        (uint32_t)strtoul(strCurrentHeight.c_str(), nullptr, 16);
     if (currentHeight >= (height + ETH_MAX_UNCLE_LOERHEIGHT)) {
       is_wait = false;
       break;
@@ -377,75 +434,80 @@ void BlockMakerEth::isUnclesThread(const uint32_t height, const string &nonce)
 
   LOG(INFO) << "------start to get block states in height: " << height;
 
-  for (int i = 0; i <= ETH_MAX_UNCLE_LOERHEIGHT; i++)
-  {
+  for (int i = 0; i <= ETH_MAX_UNCLE_LOERHEIGHT; i++) {
     std::string strheight = Strings::Format("0x%x", (height + i));
     BlockReply block = BlockMakerEth::getBlockByHeight(strheight);
 
-    //Check if this is a normal block.
-    if (BlockMakerEth::matchBlock(block, nonce))
-    {
+    // Check if this is a normal block.
+    if (BlockMakerEth::matchBlock(block, nonce)) {
       is_orphan = false;
       rewards = REWARDS;
       hash = block.hash;
-      LOG(INFO) << "~~~~~~~~ this is normal block: " << height << " -- " << (height + i) << "; [Rewards]:" << REWARDS << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+      LOG(INFO) << "~~~~~~~~ this is normal block: " << height << " -- "
+                << (height + i) << "; [Rewards]:" << REWARDS
+                << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
       break;
     }
 
-    if (!block.uncles.empty())
-    {
+    if (!block.uncles.empty()) {
       // Trying to find uncle in current block during our forward check
-      for (int j = 0; j < block.uncles.size(); j++)
-      {
+      for (int j = 0; j < block.uncles.size(); j++) {
         std::string uncleIndex = Strings::Format("0x%x", j);
-        BlockReply uncle = BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
-        if (BlockMakerEth::matchBlock(uncle, nonce))
-        {
+        BlockReply uncle =
+            BlockMakerEth::getUncleByBlockNumberAndIndex(strheight, uncleIndex);
+        if (BlockMakerEth::matchBlock(uncle, nonce)) {
           is_orphan = false;
           is_uncles = true;
-          rewards = int64_t(REWARDS / ETH_MAX_UNCLE_GENERATIONS * (ETH_MAX_UNCLE_GENERATIONS - i));
+          rewards = int64_t(REWARDS / ETH_MAX_UNCLE_GENERATIONS *
+                            (ETH_MAX_UNCLE_GENERATIONS - i));
           hash = uncle.hash;
-          LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- " << (height + i) << "; [uncleRewards]:" << rewards << "; [hash]: " << block.hash << "; [nonce]: " << block.nonce;
+          LOG(INFO) << "~~~~~~~~ this is uncles block: " << height << " -- "
+                    << (height + i) << "; [uncleRewards]:" << rewards
+                    << "; [hash]: " << block.hash
+                    << "; [nonce]: " << block.nonce;
           break;
         }
       }
       // Found uncle
-      if (is_uncles)
-      {
+      if (is_uncles) {
         break;
       }
     }
   }
 
-  BlockMakerEth::updateBlockToDB(nonce, height, hash, is_orphan, is_uncles, rewards);
-  LOG(INFO) << "-------block in height: " << height << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
+  BlockMakerEth::updateBlockToDB(nonce, height, hash, is_orphan, is_uncles,
+                                 rewards);
+  LOG(INFO) << "-------block in height: " << height
+            << "; is_uncles : " << is_uncles << "; is_orphan: " << is_orphan;
 }
 
-string BlockMakerEth::getBlockHeight()
-{
-  string request = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"pending\", false],\"id\":2}";
+string BlockMakerEth::getBlockHeight() {
+  string request =
+      "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":["
+      "\"pending\", false],\"id\":2}";
 
-  for (const auto &itr : def()->nodes)
-  {
+  for (const auto& itr : def()->nodes) {
     string response;
-    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
-    if (!ok)
-    {
-      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+    bool ok =
+        blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(),
+                              request.c_str(), response);
+    if (!ok) {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: "
+                   << itr.rpcAddr_;
       return "";
     }
 
     JsonNode r;
-    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
-    {
-      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                         r)) {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_
+                   << ", response: " << response;
       return "";
     }
 
     JsonNode result = r["result"];
     if (result.type() != Utilities::JS::type::Obj ||
-        result["number"].type() != Utilities::JS::type::Str)
-    {
+        result["number"].type() != Utilities::JS::type::Str) {
       LOG(ERROR) << "block informaiton format not expected: " << response;
       return "";
     }
@@ -456,25 +518,28 @@ string BlockMakerEth::getBlockHeight()
   return "";
 }
 
-BlockReply BlockMakerEth::getBlockByHeight(string height)
-{
-  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBlockByNumber\", \"params\": [\"%s\",true], \"id\": 2}",
-                                   height.c_str());
+BlockReply BlockMakerEth::getBlockByHeight(string height) {
+  string request = Strings::Format(
+      "{\"jsonrpc\": \"2.0\", \"method\": \"eth_getBlockByNumber\", "
+      "\"params\": [\"%s\",true], \"id\": 2}",
+      height.c_str());
   BlockReply Res;
-  for (const auto &itr : def()->nodes)
-  {
+  for (const auto& itr : def()->nodes) {
     string response;
-    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
-    if (!ok)
-    {
-      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+    bool ok =
+        blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(),
+                              request.c_str(), response);
+    if (!ok) {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: "
+                   << itr.rpcAddr_;
       return Res;
     }
 
     JsonNode r;
-    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
-    {
-      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                         r)) {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_
+                   << ", response: " << response;
       return Res;
     }
 
@@ -482,8 +547,7 @@ BlockReply BlockMakerEth::getBlockByHeight(string height)
     if (result.type() != Utilities::JS::type::Obj ||
         result["hash"].type() != Utilities::JS::type::Str ||
         result["nonce"].type() != Utilities::JS::type::Str ||
-        result["uncles"].type() != Utilities::JS::type::Array)
-    {
+        result["uncles"].type() != Utilities::JS::type::Array) {
       LOG(ERROR) << "block informaiton format not expected: " << response;
       return Res;
     }
@@ -492,8 +556,7 @@ BlockReply BlockMakerEth::getBlockByHeight(string height)
     Res.nonce = result["nonce"].str();
 
     auto uncle = result["uncles"].array();
-    for (int i = 0; i < uncle.size(); i++)
-    {
+    for (int i = 0; i < uncle.size(); i++) {
       Res.uncles.push_back(uncle[i].str());
     }
     return Res;
@@ -502,26 +565,31 @@ BlockReply BlockMakerEth::getBlockByHeight(string height)
   return Res;
 }
 
-BlockReply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string index)
-{
-  string request = Strings::Format("{\"jsonrpc\": \"2.0\", \"method\": \"eth_getUncleByBlockNumberAndIndex\", \"params\": [\"%s\",\"%s\"], \"id\": 0}\n",
-                                   height.c_str(), index.c_str());
+BlockReply BlockMakerEth::getUncleByBlockNumberAndIndex(string height,
+                                                        string index) {
+  string request = Strings::Format(
+      "{\"jsonrpc\": \"2.0\", \"method\": "
+      "\"eth_getUncleByBlockNumberAndIndex\", \"params\": [\"%s\",\"%s\"], "
+      "\"id\": 0}\n",
+      height.c_str(), index.c_str());
   LOG(INFO) << request;
   BlockReply Res;
-  for (const auto &itr : def()->nodes)
-  {
+  for (const auto& itr : def()->nodes) {
     string response;
-    bool ok = blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(), request.c_str(), response);
-    if (!ok)
-    {
-      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: " << itr.rpcAddr_;
+    bool ok =
+        blockchainNodeRpcCall(itr.rpcAddr_.c_str(), itr.rpcUserPwd_.c_str(),
+                              request.c_str(), response);
+    if (!ok) {
+      LOG(WARNING) << "Call RPC eth_getBlockByNumber failed, node url: "
+                   << itr.rpcAddr_;
       return Res;
     }
 
     JsonNode r;
-    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(), r))
-    {
-      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_ << ", response: " << response;
+    if (!JsonNode::parse(response.c_str(), response.c_str() + response.size(),
+                         r)) {
+      LOG(WARNING) << "decode response failure, node url: " << itr.rpcAddr_
+                   << ", response: " << response;
       return Res;
     }
 
@@ -529,8 +597,7 @@ BlockReply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string in
     if (result.type() != Utilities::JS::type::Obj ||
         result["hash"].type() != Utilities::JS::type::Str ||
         result["nonce"].type() != Utilities::JS::type::Str ||
-        result["uncles"].type() != Utilities::JS::type::Array)
-    {
+        result["uncles"].type() != Utilities::JS::type::Array) {
       LOG(ERROR) << "block informaiton format not expected: " << response;
       return Res;
     }
@@ -543,10 +610,8 @@ BlockReply BlockMakerEth::getUncleByBlockNumberAndIndex(string height, string in
   return Res;
 }
 
-bool BlockMakerEth::matchBlock(BlockReply block, const string &nonce)
-{
-  if (block.nonce.length() > 0 && nonce == block.nonce)
-  {
+bool BlockMakerEth::matchBlock(BlockReply block, const string& nonce) {
+  if (block.nonce.length() > 0 && nonce == block.nonce) {
     LOG(INFO) << "---NONCE EQUAL ---[nonce]:" << block.nonce;
     return true;
   }
@@ -554,34 +619,33 @@ bool BlockMakerEth::matchBlock(BlockReply block, const string &nonce)
   return false;
 }
 
-void BlockMakerEth::updateBlockToDB(const string &nonce, const uint32_t height, const string &hash,
-                                    const int is_orphaned, const int is_uncle, const int64_t reward)
-{
+void BlockMakerEth::updateBlockToDB(const string& nonce,
+                                    const uint32_t height,
+                                    const string& hash,
+                                    const int is_orphaned,
+                                    const int is_uncle,
+                                    const int64_t reward) {
   string sql;
-  sql = Strings::Format(" UPDATE `found_blocks` SET `hash`=\"%s\", "
-                        " `is_orphaned`=%d, `is_uncle`=%d, `rewards`=%" PRId64 ""
-                        " WHERE `height`=%lu AND `nonce`=\"%s\";",
-                        hash.c_str(),
-                        is_orphaned, is_uncle, reward,
-                        height, nonce.c_str());
+  sql = Strings::Format(
+      " UPDATE `found_blocks` SET `hash`=\"%s\", "
+      " `is_orphaned`=%d, `is_uncle`=%d, `rewards`=%" PRId64
+      ""
+      " WHERE `height`=%lu AND `nonce`=\"%s\";",
+      hash.c_str(), is_orphaned, is_uncle, reward, height, nonce.c_str());
   LOG(INFO) << sql;
 
   // try connect to DB
   MySQLConnection db(poolDB_);
-  for (size_t i = 0; i < 3; i++)
-  {
+  for (size_t i = 0; i < 3; i++) {
     if (db.ping())
       break;
     else
       sleep(3);
   }
 
-  if (db.execute(sql) == false)
-  {
+  if (db.execute(sql) == false) {
     LOG(ERROR) << "----update found block failure: " << sql;
-  }
-  else
-  {
+  } else {
     LOG(INFO) << "----update found block success for height " << height;
   }
 }

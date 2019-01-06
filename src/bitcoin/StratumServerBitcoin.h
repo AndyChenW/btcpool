@@ -32,84 +32,89 @@ class FoundBlock;
 class JobRepositoryBitcoin;
 class ShareBitcoin;
 
-class ServerBitcoin : public ServerBase<JobRepositoryBitcoin>
-{
-private:
+class ServerBitcoin : public ServerBase<JobRepositoryBitcoin> {
+ private:
   string auxPowSolvedShareTopic_;
   string rskSolvedShareTopic_;
-  KafkaProducer *kafkaProducerNamecoinSolvedShare_;
-  KafkaProducer *kafkaProducerRskSolvedShare_;
+  KafkaProducer* kafkaProducerNamecoinSolvedShare_;
+  KafkaProducer* kafkaProducerRskSolvedShare_;
 
   uint32_t versionMask_;
 
-public:
-  ServerBitcoin(const int32_t shareAvgSeconds, const libconfig::Config &config);
+ public:
+  ServerBitcoin(const int32_t shareAvgSeconds, const libconfig::Config& config);
   virtual ~ServerBitcoin();
 
   uint32_t getVersionMask() const;
 
   bool setupInternal(StratumServer* sserver) override;
 
-  unique_ptr<StratumSession> createConnection(struct bufferevent *bev, struct sockaddr *saddr, uint32_t sessionID) override;
-  void sendSolvedShare2Kafka(const FoundBlock *foundBlock,
-                             const std::vector<char> &coinbaseBin);
+  unique_ptr<StratumSession> createConnection(struct bufferevent* bev,
+                                              struct sockaddr* saddr,
+                                              uint32_t sessionID) override;
+  void sendSolvedShare2Kafka(const FoundBlock* foundBlock,
+                             const std::vector<char>& coinbaseBin);
 
-  int checkShare(const ShareBitcoin &share,
-                 const uint32_t extraNonce1, const string &extraNonce2Hex,
-                 const uint32_t nTime, const uint32_t nonce,
+  int checkShare(const ShareBitcoin& share,
+                 const uint32_t extraNonce1,
+                 const string& extraNonce2Hex,
+                 const uint32_t nTime,
+                 const uint32_t nonce,
                  const uint32_t versionMask,
-                 const uint256 &jobTarget, const string &workFullName,
-                 string *userCoinbaseInfo = nullptr);
-private:
-  JobRepository* createJobRepository(const char *kafkaBrokers,
-                                    const char *consumerTopic,
-                                     const string &fileLastNotifyTime) override;
+                 const uint256& jobTarget,
+                 const string& workFullName,
+                 string* userCoinbaseInfo = nullptr);
 
+ private:
+  JobRepository* createJobRepository(const char* kafkaBrokers,
+                                     const char* consumerTopic,
+                                     const string& fileLastNotifyTime) override;
 };
 
-class JobRepositoryBitcoin : public JobRepositoryBase<ServerBitcoin>
-{
-private:
+class JobRepositoryBitcoin : public JobRepositoryBase<ServerBitcoin> {
+ private:
   uint256 latestPrevBlockHash_;
-public:
-  JobRepositoryBitcoin(const char *kafkaBrokers, const char *consumerTopic, const string &fileLastNotifyTime, ServerBitcoin *server);
+
+ public:
+  JobRepositoryBitcoin(const char* kafkaBrokers,
+                       const char* consumerTopic,
+                       const string& fileLastNotifyTime,
+                       ServerBitcoin* server);
   virtual ~JobRepositoryBitcoin();
   virtual StratumJob* createStratumJob() override;
-  StratumJobEx* createStratumJobEx(StratumJob *sjob, bool isClean) override;
-  void broadcastStratumJob(StratumJob *sjob) override;
-
+  StratumJobEx* createStratumJobEx(StratumJob* sjob, bool isClean) override;
+  void broadcastStratumJob(StratumJob* sjob) override;
 };
 
-class StratumJobExBitcoin : public StratumJobEx
-{
-  void generateCoinbaseTx(std::vector<char> *coinbaseBin,
+class StratumJobExBitcoin : public StratumJobEx {
+  void generateCoinbaseTx(std::vector<char>* coinbaseBin,
                           const uint32_t extraNonce1,
-                          const string &extraNonce2Hex,
-                          string *userCoinbaseInfo = nullptr);
+                          const string& extraNonce2Hex,
+                          string* userCoinbaseInfo = nullptr);
 
-public:
-
+ public:
   string miningNotify1_;
   string miningNotify2_;
   string coinbase1_;
   string miningNotify3_;
   string miningNotify3Clean_;
 
-public:
-  StratumJobExBitcoin(StratumJob *sjob, bool isClean);
+ public:
+  StratumJobExBitcoin(StratumJob* sjob, bool isClean);
 
-  void generateBlockHeader(CBlockHeader  *header,
-                           std::vector<char> *coinbaseBin,
+  void generateBlockHeader(CBlockHeader* header,
+                           std::vector<char>* coinbaseBin,
                            const uint32_t extraNonce1,
-                           const string &extraNonce2Hex,
-                           const vector<uint256> &merkleBranch,
-                           const uint256 &hashPrevBlock,
-                           const uint32_t nBits, const int32_t nVersion,
-                           const uint32_t nTime, const uint32_t nonce,
+                           const string& extraNonce2Hex,
+                           const vector<uint256>& merkleBranch,
+                           const uint256& hashPrevBlock,
+                           const uint32_t nBits,
+                           const int32_t nVersion,
+                           const uint32_t nTime,
+                           const uint32_t nonce,
                            const uint32_t versionMask,
-                           string *userCoinbaseInfo = nullptr);
+                           string* userCoinbaseInfo = nullptr);
   void init();
-
 };
 
 #endif

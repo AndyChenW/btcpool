@@ -28,30 +28,31 @@
 #include "StratumServerEth.h"
 
 class StratumMinerEth : public StratumMinerBase<StratumTraitsEth> {
-public:
-  StratumMinerEth(StratumSessionEth &session,
-                  const DiffController &diffController,
-                  const std::string &clientAgent,
-                  const std::string &workerName,
+ public:
+  StratumMinerEth(StratumSessionEth& session,
+                  const DiffController& diffController,
+                  const std::string& clientAgent,
+                  const std::string& workerName,
                   int64_t workerId,
                   StratumProtocolEth ethProtocol);
 
-  void handleRequest(const std::string &idStr,
-                     const std::string &method,
-                     const JsonNode &jparams,
-                     const JsonNode &jroot) override;
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
 
-private:
-  void handleRequest_GetWork(const string &idStr, const JsonNode &jparams);
-  void handleRequest_SubmitHashrate(const string &idStr, const JsonNode &jparams);
-  void handleRequest_Submit(const string &idStr, const JsonNode &jparams);
-  void responseError(const string &idStr, int code);
-  void responseTrue(const string &idStr);
-  void responseFalse(const string &idStr, int errCode);
+ private:
+  void handleRequest_GetWork(const string& idStr, const JsonNode& jparams);
+  void handleRequest_SubmitHashrate(const string& idStr,
+                                    const JsonNode& jparams);
+  void handleRequest_Submit(const string& idStr, const JsonNode& jparams);
+  void responseError(const string& idStr, int code);
+  void responseTrue(const string& idStr);
+  void responseFalse(const string& idStr, int errCode);
   // response a false with an error object as data
-  void rpc2ResponseFalse(const string &idStr, int errCode);
+  void rpc2ResponseFalse(const string& idStr, int errCode);
 
   StratumProtocolEth ethProtocol_;
 };
 
-#endif // #ifndef STRATUM_MINER_ETH_H_
+#endif  // #ifndef STRATUM_MINER_ETH_H_

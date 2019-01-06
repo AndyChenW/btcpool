@@ -30,39 +30,47 @@
 #include "StratumBitcoin.h"
 
 class StratumSessionBitcoin : public StratumSessionBase<StratumTraitsBitcoin> {
-public:
-  StratumSessionBitcoin(ServerBitcoin &server,
-                        struct bufferevent *bev,
-                        struct sockaddr *saddr,
+ public:
+  StratumSessionBitcoin(ServerBitcoin& server,
+                        struct bufferevent* bev,
+                        struct sockaddr* saddr,
                         uint32_t extraNonce1);
-  uint16_t decodeSessionId(const std::string &exMessage) const override;
-  void sendMiningNotify(shared_ptr<StratumJobEx> exJobPtr, bool isFirstJob) override;
+  uint16_t decodeSessionId(const std::string& exMessage) const override;
+  void sendMiningNotify(shared_ptr<StratumJobEx> exJobPtr,
+                        bool isFirstJob) override;
 
-protected:
-  void handleRequest(const std::string &idStr, const std::string &method,
-                     const JsonNode &jparams, const JsonNode &jroot) override;
-  void handleRequest_MiningConfigure(const string &idStr, const JsonNode &jparams);
-  void handleRequest_Subscribe(const std::string &idStr, const JsonNode &jparams);
-  void handleRequest_Authorize(const std::string &idStr, const JsonNode &jparams);
+ protected:
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
+  void handleRequest_MiningConfigure(const string& idStr,
+                                     const JsonNode& jparams);
+  void handleRequest_Subscribe(const std::string& idStr,
+                               const JsonNode& jparams);
+  void handleRequest_Authorize(const std::string& idStr,
+                               const JsonNode& jparams);
   // request from BTCAgent
-  void handleRequest_AgentGetCapabilities(const string &idStr, const JsonNode &jparams);
+  void handleRequest_AgentGetCapabilities(const string& idStr,
+                                          const JsonNode& jparams);
 
   void logAuthorizeResult(bool success) override;
-  string getMinerInfoJson(const string &type) override;
+  string getMinerInfoJson(const string& type) override;
 
   std::unique_ptr<StratumMessageDispatcher> createDispatcher() override;
-public:
-  std::unique_ptr<StratumMiner> createMiner(const std::string &clientAgent,
-                                            const std::string &workerName,
+
+ public:
+  std::unique_ptr<StratumMiner> createMiner(const std::string& clientAgent,
+                                            const std::string& workerName,
                                             int64_t workerId) override;
 
-private:
+ private:
   uint8_t allocShortJobId();
 
   uint8_t shortJobIdIdx_;
-  
-  uint32_t versionMask_; // version mask that the miner wants
-  uint64_t suggestedMinDiff_; // min difficulty that the miner wants
+
+  uint32_t versionMask_;       // version mask that the miner wants
+  uint64_t suggestedMinDiff_;  // min difficulty that the miner wants
 };
 
 #endif  // #ifndef STRATUM_SESSION_BITCOIN_H_

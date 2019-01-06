@@ -34,26 +34,28 @@
 
 using namespace std;
 
-StratumMessageMinerDispatcher::StratumMessageMinerDispatcher(IStratumSession &session, unique_ptr<StratumMiner> miner)
-    : session_(session), miner_(move(miner)) {
-}
+StratumMessageMinerDispatcher::StratumMessageMinerDispatcher(
+    IStratumSession& session,
+    unique_ptr<StratumMiner> miner)
+    : session_(session), miner_(move(miner)) {}
 
-void StratumMessageMinerDispatcher::handleRequest(const string &idStr,
-                                                  const string &method,
-                                                  const JsonNode &jparams,
-                                                  const JsonNode &jroot) {
+void StratumMessageMinerDispatcher::handleRequest(const string& idStr,
+                                                  const string& method,
+                                                  const JsonNode& jparams,
+                                                  const JsonNode& jroot) {
   miner_->handleRequest(idStr, method, jparams, jroot);
 }
 
-void StratumMessageMinerDispatcher::handleExMessage(const string &exMessage) {
+void StratumMessageMinerDispatcher::handleExMessage(const string& exMessage) {
   LOG(ERROR) << "Agent message shall not reach here";
 }
 
-void StratumMessageMinerDispatcher::responseShareAccepted(const string &idStr) {
+void StratumMessageMinerDispatcher::responseShareAccepted(const string& idStr) {
   session_.responseTrue(idStr);
 }
 
-void StratumMessageMinerDispatcher::responseShareError(const string &idStr, int32_t status) {
+void StratumMessageMinerDispatcher::responseShareError(const string& idStr,
+                                                       int32_t status) {
   session_.responseError(idStr, status);
 }
 
@@ -65,7 +67,7 @@ void StratumMessageMinerDispatcher::resetCurDiff(uint64_t curDiff) {
   miner_->resetCurDiff(curDiff);
 }
 
-void StratumMessageMinerDispatcher::addLocalJob(LocalJob &localJob) {
+void StratumMessageMinerDispatcher::addLocalJob(LocalJob& localJob) {
   auto oldDiff = miner_->getCurDiff();
   auto newDiff = miner_->addLocalJob(localJob);
   if (newDiff != oldDiff) {
@@ -73,7 +75,7 @@ void StratumMessageMinerDispatcher::addLocalJob(LocalJob &localJob) {
   }
 }
 
-void StratumMessageMinerDispatcher::removeLocalJob(LocalJob &localJob) {
+void StratumMessageMinerDispatcher::removeLocalJob(LocalJob& localJob) {
   miner_->removeLocalJob(localJob);
 }
 
@@ -92,10 +94,12 @@ struct StratumMessageExMiningSetDiff {
   boost::endian::little_uint16_buf_t count;
 };
 
-StratumMessageAgentDispatcher::StratumMessageAgentDispatcher(IStratumSession &session,
-                                                             const DiffController &diffController)
-    : session_(session), diffController_(new DiffController(diffController)), curDiff_(0) {
-}
+StratumMessageAgentDispatcher::StratumMessageAgentDispatcher(
+    IStratumSession& session,
+    const DiffController& diffController)
+    : session_(session),
+      diffController_(new DiffController(diffController)),
+      curDiff_(0) {}
 
 StratumMessageAgentDispatcher::~StratumMessageAgentDispatcher() {
   while (!miners_.empty()) {
@@ -103,48 +107,48 @@ StratumMessageAgentDispatcher::~StratumMessageAgentDispatcher() {
   }
 }
 
-void StratumMessageAgentDispatcher::handleRequest(const string &idStr,
-                                                  const string &method,
-                                                  const JsonNode &jparams,
-                                                  const JsonNode &jroot) {
+void StratumMessageAgentDispatcher::handleRequest(const string& idStr,
+                                                  const string& method,
+                                                  const JsonNode& jparams,
+                                                  const JsonNode& jroot) {
   LOG(ERROR) << "Miner message shall not reach here";
 }
 
-void StratumMessageAgentDispatcher::handleExMessage(const string &exMessage) {
-  auto header = reinterpret_cast<const StratumMessageEx *>(exMessage.data());
+void StratumMessageAgentDispatcher::handleExMessage(const string& exMessage) {
+  auto header = reinterpret_cast<const StratumMessageEx*>(exMessage.data());
   assert(exMessage.size() == header->length.value());
   auto command = static_cast<StratumCommandEx>(header->command.value());
   switch (command) {
-  case StratumCommandEx::REGISTER_WORKER:
-    handleExMessage_RegisterWorker(exMessage);
-    break;
-  case StratumCommandEx::UNREGISTER_WORKER:
-    handleExMessage_UnregisterWorker(exMessage);
-    break;
-  case StratumCommandEx::SUBMIT_SHARE:
-  case StratumCommandEx::SUBMIT_SHARE_WITH_TIME:
-  case StratumCommandEx::SUBMIT_SHARE_WITH_VER:
-  case StratumCommandEx::SUBMIT_SHARE_WITH_TIME_VER:
-    handleExMessage_SessionSpecific(exMessage);
-    break;
-  default:
-    break;
+    case StratumCommandEx::REGISTER_WORKER:
+      handleExMessage_RegisterWorker(exMessage);
+      break;
+    case StratumCommandEx::UNREGISTER_WORKER:
+      handleExMessage_UnregisterWorker(exMessage);
+      break;
+    case StratumCommandEx::SUBMIT_SHARE:
+    case StratumCommandEx::SUBMIT_SHARE_WITH_TIME:
+    case StratumCommandEx::SUBMIT_SHARE_WITH_VER:
+    case StratumCommandEx::SUBMIT_SHARE_WITH_TIME_VER:
+      handleExMessage_SessionSpecific(exMessage);
+      break;
+    default:
+      break;
   }
 }
 
 void StratumMessageAgentDispatcher::setMinDiff(uint64_t minDiff) {
-  for (auto &p : miners_) {
+  for (auto& p : miners_) {
     p.second->setMinDiff(minDiff);
   }
 }
 
 void StratumMessageAgentDispatcher::resetCurDiff(uint64_t curDiff) {
-  for (auto &p : miners_) {
+  for (auto& p : miners_) {
     p.second->resetCurDiff(curDiff);
   }
 }
 
-void StratumMessageAgentDispatcher::addLocalJob(LocalJob &localJob) {
+void StratumMessageAgentDispatcher::addLocalJob(LocalJob& localJob) {
   uint64_t agentDiff = diffController_->calcCurDiff();
   if (agentDiff != curDiff_) {
     session_.sendSetDifficulty(localJob, agentDiff);
@@ -152,7 +156,7 @@ void StratumMessageAgentDispatcher::addLocalJob(LocalJob &localJob) {
   }
 
   map<uint8_t, vector<uint16_t>> newDiffs;
-  for (auto &p : miners_) {
+  for (auto& p : miners_) {
     uint64_t curDiff = p.second->getCurDiff();
     uint8_t oldDiff = curDiff ? log2(curDiff) : 0;
     uint8_t newDiff = log2(p.second->addLocalJob(localJob));
@@ -164,7 +168,8 @@ void StratumMessageAgentDispatcher::addLocalJob(LocalJob &localJob) {
   if (!newDiffs.empty()) {
     //
     // CMD_MINING_SET_DIFF:
-    // | magic_number(1) | cmd(1) | len (2) | diff_2_exp(1) | count(2) | session_id (2) ... |
+    // | magic_number(1) | cmd(1) | len (2) | diff_2_exp(1) | count(2) |
+    // session_id (2) ... |
     //
     //
     // max session id count is 32,764, each message's max length is UINT16_MAX.
@@ -177,21 +182,25 @@ void StratumMessageAgentDispatcher::addLocalJob(LocalJob &localJob) {
   }
 }
 
-void StratumMessageAgentDispatcher::removeLocalJob(LocalJob &localJob) {
-  for (auto &p : miners_) {
+void StratumMessageAgentDispatcher::removeLocalJob(LocalJob& localJob) {
+  for (auto& p : miners_) {
     p.second->removeLocalJob(localJob);
   }
 }
 
-void StratumMessageAgentDispatcher::handleExMessage_RegisterWorker(const string &exMessage) {
+void StratumMessageAgentDispatcher::handleExMessage_RegisterWorker(
+    const string& exMessage) {
   //
   // REGISTER_WORKER:
-  // | magic_number(1) | cmd(1) | len (2) | session_id(2) | clientAgent | worker_name |
+  // | magic_number(1) | cmd(1) | len (2) | session_id(2) | clientAgent |
+  // worker_name |
   //
-  if (exMessage.size() < 8 || exMessage.size() > 100 /* 100 bytes is big enough */)
+  if (exMessage.size() < 8 ||
+      exMessage.size() > 100 /* 100 bytes is big enough */)
     return;
 
-  auto header = reinterpret_cast<const StratumMessageExSessionSpecific *>(exMessage.data());
+  auto header = reinterpret_cast<const StratumMessageExSessionSpecific*>(
+      exMessage.data());
   auto sessionId = header->sessionId.value();
   if (sessionId > StratumMessageEx::AGENT_MAX_SESSION_ID)
     return;
@@ -218,18 +227,22 @@ void StratumMessageAgentDispatcher::handleExMessage_RegisterWorker(const string 
   registerWorker(sessionId, clientAgent, workerName, workerId);
 }
 
-void StratumMessageAgentDispatcher::handleExMessage_UnregisterWorker(const string &exMessage) {
+void StratumMessageAgentDispatcher::handleExMessage_UnregisterWorker(
+    const string& exMessage) {
   //
   // UNREGISTER_WORKER:
   // | magic_number(1) | cmd(1) | len (2) | session_id(2) |
   //
-  if (exMessage.size() != 6) return;
-  auto header = reinterpret_cast<const StratumMessageExSessionSpecific *>(exMessage.data());
+  if (exMessage.size() != 6)
+    return;
+  auto header = reinterpret_cast<const StratumMessageExSessionSpecific*>(
+      exMessage.data());
   auto sessionId = header->sessionId.value();
   unregisterWorker(sessionId);
 }
 
-void StratumMessageAgentDispatcher::handleExMessage_SessionSpecific(const string &exMessage) {
+void StratumMessageAgentDispatcher::handleExMessage_SessionSpecific(
+    const string& exMessage) {
   //
   // Session specific messages
   // | magic_number(1) | cmd(1) | len (2) | ... | session_id(2) | ...
@@ -241,11 +254,16 @@ void StratumMessageAgentDispatcher::handleExMessage_SessionSpecific(const string
   }
 }
 
-void StratumMessageAgentDispatcher::registerWorker(uint32_t sessionId,const std::string &clientAgent, const std::string &workerName, int64_t workerId) {
+void StratumMessageAgentDispatcher::registerWorker(
+    uint32_t sessionId,
+    const std::string& clientAgent,
+    const std::string& workerName,
+    int64_t workerId) {
   DLOG(INFO) << "[agent] clientAgent: " << clientAgent
-             << ", workerName: " << workerName << ", workerId: "
-             << workerId << ", session id:" << sessionId;
-  miners_.emplace(sessionId, session_.createMiner(clientAgent, workerName, workerId));
+             << ", workerName: " << workerName << ", workerId: " << workerId
+             << ", session id:" << sessionId;
+  miners_.emplace(sessionId,
+                  session_.createMiner(clientAgent, workerName, workerId));
   session_.addWorker(clientAgent, workerName, workerId);
 }
 
@@ -253,10 +271,13 @@ void StratumMessageAgentDispatcher::unregisterWorker(uint32_t sessionId) {
   miners_.erase(sessionId);
 }
 
-void StratumMessageAgentDispatcher::getSetDiffCommand(std::map<uint8_t, std::vector<uint16_t>> &diffSessionIds, std::string &exMessage) {
+void StratumMessageAgentDispatcher::getSetDiffCommand(
+    std::map<uint8_t, std::vector<uint16_t>>& diffSessionIds,
+    std::string& exMessage) {
   //
   // CMD_MINING_SET_DIFF:
-  // | magic_number(1) | cmd(1) | len (2) | diff_2_exp(1) | count(2) | session_id (2) ... |
+  // | magic_number(1) | cmd(1) | len (2) | diff_2_exp(1) | count(2) |
+  // session_id (2) ... |
   //
   //
   // max session id count is 32,764, each message's max length is UINT16_MAX.
@@ -266,18 +287,19 @@ void StratumMessageAgentDispatcher::getSetDiffCommand(std::map<uint8_t, std::vec
   static const size_t kMaxCount = 32764;
   exMessage.clear();
 
-  for (auto &p : diffSessionIds) {
+  for (auto& p : diffSessionIds) {
     auto iter = p.second.begin();
     auto iend = p.second.end();
     while (iter != iend) {
       size_t count = distance(iter, iend);
-      if (count > kMaxCount) count = kMaxCount;
+      if (count > kMaxCount)
+        count = kMaxCount;
 
       string buf;
       uint16_t len = 1 + 1 + 2 + 1 + 2 + count * 2;
       buf.resize(len);
       auto start = &buf.front();
-      auto header = reinterpret_cast<StratumMessageExMiningSetDiff *>(start);
+      auto header = reinterpret_cast<StratumMessageExMiningSetDiff*>(start);
 
       // cmd
       header->magic = StratumMessageEx::CMD_MAGIC_NUMBER;
@@ -291,7 +313,8 @@ void StratumMessageAgentDispatcher::getSetDiffCommand(std::map<uint8_t, std::vec
 
       // count
       header->count = count;
-      auto p = reinterpret_cast<boost::endian::little_uint16_buf_t *>(start + 1 + 1 + 2 + 1 + 2);
+      auto p = reinterpret_cast<boost::endian::little_uint16_buf_t*>(
+          start + 1 + 1 + 2 + 1 + 2);
 
       // session ids
       for (size_t j = 0; j < count; j++) {
@@ -301,5 +324,5 @@ void StratumMessageAgentDispatcher::getSetDiffCommand(std::map<uint8_t, std::vec
       exMessage.append(buf);
 
     } /* /while */
-  } /* /for */
+  }   /* /for */
 }

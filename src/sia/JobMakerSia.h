@@ -27,22 +27,19 @@
 #include "JobMaker.h"
 #include "utilities_js.hpp"
 
-
-class JobMakerHandlerSia : public GwJobMakerHandler
-{
-public:
+class JobMakerHandlerSia : public GwJobMakerHandler {
+ public:
   JobMakerHandlerSia();
   virtual ~JobMakerHandlerSia() {}
-  bool processMsg(const string &msg) override;
+  bool processMsg(const string& msg) override;
   string makeStratumJobMsg() override;
-  virtual bool processMsg(JsonNode &j);
+  virtual bool processMsg(JsonNode& j);
 
-protected:
+ protected:
   string target_;
   string header_;
   uint32_t time_;
-  bool validate(JsonNode &j);
-
+  bool validate(JsonNode& j);
 };
 
 #endif

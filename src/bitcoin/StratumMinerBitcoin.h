@@ -29,26 +29,27 @@
 #include "StratumMiner.h"
 
 class StratumMinerBitcoin : public StratumMinerBase<StratumTraitsBitcoin> {
-public:
-  StratumMinerBitcoin(StratumSessionBitcoin &session,
-                      const DiffController &diffController,
-                      const std::string &clientAgent,
-                      const std::string &workerName,
+ public:
+  StratumMinerBitcoin(StratumSessionBitcoin& session,
+                      const DiffController& diffController,
+                      const std::string& clientAgent,
+                      const std::string& workerName,
                       int64_t workerId);
 
-  void handleRequest(const std::string &idStr,
-                     const std::string &method,
-                     const JsonNode &jparams,
-                     const JsonNode &jroot) override;
-  void handleExMessage(const std::string &exMessage) override;
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
+  void handleExMessage(const std::string& exMessage) override;
 
-private:
-  void handleRequest_Submit(const std::string &idStr, const JsonNode &jparams);
-  void handleRequest_SuggestTarget(const std::string &idStr, const JsonNode &jparams);
-  void handleExMessage_SubmitShare(const std::string &exMessage,
+ private:
+  void handleRequest_Submit(const std::string& idStr, const JsonNode& jparams);
+  void handleRequest_SuggestTarget(const std::string& idStr,
+                                   const JsonNode& jparams);
+  void handleExMessage_SubmitShare(const std::string& exMessage,
                                    const bool isWithTime,
                                    const bool isWithVersion);
-  void handleRequest_Submit(const std::string &idStr,
+  void handleRequest_Submit(const std::string& idStr,
                             uint8_t shortJobId,
                             uint64_t extraNonce2,
                             uint32_t nonce,
@@ -56,4 +57,4 @@ private:
                             uint32_t versionMask);
 };
 
-#endif // #ifndef STRATUM_MINER_BITCOIN_H_
+#endif  // #ifndef STRATUM_MINER_BITCOIN_H_

@@ -29,33 +29,37 @@
 #include "StratumServerDecred.h"
 
 class StratumSessionDecred : public StratumSessionBase<StratumTraitsDecred> {
-public:
-  StratumSessionDecred(ServerDecred &server,
-                       struct bufferevent *bev,
-                       struct sockaddr *saddr,
+ public:
+  StratumSessionDecred(ServerDecred& server,
+                       struct bufferevent* bev,
+                       struct sockaddr* saddr,
                        uint32_t extraNonce1,
-                       const StratumProtocolDecred &protocol);
+                       const StratumProtocolDecred& protocol);
 
-  void sendMiningNotify(shared_ptr<StratumJobEx> exJobPtr, bool isFirstJob) override;
+  void sendMiningNotify(shared_ptr<StratumJobEx> exJobPtr,
+                        bool isFirstJob) override;
 
-protected:
-  void handleRequest(const std::string &idStr, const std::string &method,
-                     const JsonNode &jparams, const JsonNode &jroot) override;
-  void handleRequest_Subscribe(const std::string &idStr,
-                               const JsonNode &jparams,
-                               const JsonNode &jroot);
-  void handleRequest_Authorize(const std::string &idStr,
-                               const JsonNode &jparams,
-                               const JsonNode &jroot);
-public:
-  std::unique_ptr<StratumMiner> createMiner(const std::string &clientAgent,
-                                            const std::string &workerName,
+ protected:
+  void handleRequest(const std::string& idStr,
+                     const std::string& method,
+                     const JsonNode& jparams,
+                     const JsonNode& jroot) override;
+  void handleRequest_Subscribe(const std::string& idStr,
+                               const JsonNode& jparams,
+                               const JsonNode& jroot);
+  void handleRequest_Authorize(const std::string& idStr,
+                               const JsonNode& jparams,
+                               const JsonNode& jroot);
+
+ public:
+  std::unique_ptr<StratumMiner> createMiner(const std::string& clientAgent,
+                                            const std::string& workerName,
                                             int64_t workerId) override;
 
-private:
-  const StratumProtocolDecred &protocol_;
+ private:
+  const StratumProtocolDecred& protocol_;
 
-  uint8_t shortJobId_;    // jobId starts from 0
+  uint8_t shortJobId_;  // jobId starts from 0
 };
 
 #endif  // #ifndef STRATUM_SESSION_DECRED_H_
