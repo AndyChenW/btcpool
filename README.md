@@ -1,6 +1,19 @@
 BTCPool for Bitcoin, Ethereum, Decred, Bytom, ...
 ==================
 
+## Contribution
+
+We use [clang-format](https://clang.llvm.org/docs/ClangFormat.html) Chromium style as our project coding style.
+Editor integrations are available on official page.
+
+Install clang-format and git pre-commit hook before any contribution.
+
+```
+git clone git@github.com:easy2mine/main_pool.git
+cd main_pool
+./script/git-pre-commit-format install
+```
+
 |Branch|Status|
 |------|------|
 |master|[![CircleCI](https://circleci.com/gh/btccom/btcpool/tree/master.svg?style=shield)](https://circleci.com/gh/btccom/btcpool/tree/master)|
@@ -30,7 +43,7 @@ It also support these merged mining blockchains of SHA256 blockchains:
    * [RSK](https://www.rsk.co/)
    * [ElastOS](https://elastos.org/)
    * Other blockchains that compatible with [Bitcoin merged mining specification](https://en.bitcoin.it/wiki/Merged_mining_specification)
-   
+
 If you want merged mine more than one chains that compatible with [Bitcoin merged mining specification](https://en.bitcoin.it/wiki/Merged_mining_specification), use [merged mining proxy](https://github.com/btccom/btcpool-go-modules/tree/master/mergedMiningProxy).
 
 Note: The project is still a testbed and work in progress, all things could be changed.
