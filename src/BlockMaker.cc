@@ -459,8 +459,8 @@ void BlockMaker::_submitNamecoinBlockThread(const string &auxBlockHash,
   {
     const string nowStr = date("%F %T");
     string sql;
-    sql = Strings::Format("INSERT INTO `found_nmc_blocks` "
-                          " (`bitcoin_block_hash`,`aux_block_hash`,"
+    sql = Strings::Format("INSERT INTO `found_aux_blocks` "
+                          " (`parent_block_hash`,`aux_block_hash`,"
                           "  `aux_pow`,`created_at`) "
                           " VALUES (\"%s\",\"%s\",\"%s\",\"%s\"); ",
                           bitcoinBlockHash.c_str(),
@@ -796,14 +796,14 @@ void BlockMaker::runThreadConsumeNamecoinSovledShare() {
   @author Martin Medina
   @copyright RSK Labs Ltd.
 */
-void BlockMaker::submitRskBlockPartialMerkleNonBlocking(const string &rpcAddress, const string &rpcUserPwd, const string &blockHashHex, 
-                                                        const string &blockHeaderHex, const string &coinbaseHex, const string &merkleHashesHex, 
+void BlockMaker::submitRskBlockPartialMerkleNonBlocking(const string &rpcAddress, const string &rpcUserPwd, const string &blockHashHex,
+                                                        const string &blockHeaderHex, const string &coinbaseHex, const string &merkleHashesHex,
                                                         const string &totalTxCount) {
   boost::thread t(boost::bind(&BlockMaker::_submitRskBlockPartialMerkleThread, this, rpcAddress, rpcUserPwd, blockHashHex, blockHeaderHex, coinbaseHex, merkleHashesHex, totalTxCount));
 }
 
-void BlockMaker::_submitRskBlockPartialMerkleThread(const string &rpcAddress, const string &rpcUserPwd, const string &blockHashHex, 
-                                      const string &blockHeaderHex, const string &coinbaseHex, const string &merkleHashesHex, 
+void BlockMaker::_submitRskBlockPartialMerkleThread(const string &rpcAddress, const string &rpcUserPwd, const string &blockHashHex,
+                                      const string &blockHeaderHex, const string &coinbaseHex, const string &merkleHashesHex,
                                       const string &totalTxCount) {
   string request = "{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"mnr_submitBitcoinBlockPartialMerkle\",\"params\":[";
   request += "\"" + blockHashHex + "\", ";
@@ -877,7 +877,7 @@ void BlockMaker::consumeRskSolvedShare(rd_kafka_message_t *rkmessage) {
   }
 
   LOG(INFO) << "submit RSK block: " << blkHeader.GetHash().ToString();
-  
+
   // get gbtHash and rawgbt (vtxs)
   uint256 gbtHash;
   shared_ptr<vector<CTransactionRef>> vtxs;
@@ -922,7 +922,7 @@ void BlockMaker::consumeRskSolvedShare(rd_kafka_message_t *rkmessage) {
   string blockHeaderHex = EncodeHexBlockHeader(blkHeader);
 
   // coinbase bin -> hex
-  string coinbaseHex;  
+  string coinbaseHex;
   Bin2Hex(coinbaseTxBin, coinbaseHex);
 
   // build coinbase's merkle tree branch
@@ -943,7 +943,7 @@ void BlockMaker::consumeRskSolvedShare(rd_kafka_message_t *rkmessage) {
   sstream << std::hex << vtxhashes.size();
   string totalTxCountHex(sstream.str());
 
-  submitRskBlockPartialMerkleNonBlocking(shareData.rpcAddress_, shareData.rpcUserPwd_, blockHashHex, blockHeaderHex, 
+  submitRskBlockPartialMerkleNonBlocking(shareData.rpcAddress_, shareData.rpcUserPwd_, blockHashHex, blockHeaderHex,
                                         coinbaseHex, merkleHashesHex, totalTxCountHex);  // using thread
 }
 
